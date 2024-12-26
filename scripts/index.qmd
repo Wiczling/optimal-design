@@ -4,7 +4,7 @@ author:
   - name: "Paweł Wiczling*"
     affiliations:
       - name: "Department of Biopharmaceutics and Pharmacodynamics, Medical University of Gdańsk, Gen. J. Hallera 107, 80-416 Gdańsk, Poland"
-date: "`r format(Sys.Date())`"
+date: today
 format:
   html:
     theme: cosmo

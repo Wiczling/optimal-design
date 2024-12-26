@@ -21,9 +21,6 @@ knitr::opts_chunk$set(cache=TRUE, message=FALSE, error=FALSE, warning=FALSE, com
 ```
 
 # Setup
-
-The packages we will use are listed below.
-
 ```{r setup}
 library(cmdstanr)
 library(pracma)
@@ -70,13 +67,7 @@ ggsave(plot=.plot, filename=.filename, path=.path, height=.height, width=.width)
 ```
 
 # Introduction
-
 # Priors
-
-Priors are based on the follwoing article "Comparison of Chromatographic Stationary Phases Using a Bayesian-Based Multilevel Model" by Paweł Wiczling and Agnieszka Kamedulska published in Analytical Chemistry 2024 96 (3), 1310-1319. 
-
-In this work a simplified approach is taken with the focus on the neutral, acidic and basic forms of an analytes and single chromatographic stationary phase - assuming the pKa and changes of pKa with organic modifier are known.
-
 ```{r literature-priors}
 # fun_generate_priors defined in helper_functions.R
 priorsN_MeOH=fun_generate_priors("N_MeOH", logP=2.2)
@@ -86,25 +77,7 @@ priorsA=fun_generate_priors("A", logP=2.2)
 priorsB=fun_generate_priors("B", logP=2.2)
 priorsNB=fun_generate_priors("NB", logP=2.2)
 priorsNA=fun_generate_priors("NA", logP=2.2)
-
-pNA=as.data.frame(priorsNA)%>%
-  mutate(parameter=c("logkwN","S1N","dS1","dlogkwA","dS1A","ddS1A"), .before = p)%>%
-  select(-p, -msigma_sqaure, -starts_with("S_inv"))%>%
-  mutate(group = "Acids")
-
-pNB = as.data.frame(priorsNB)%>%
-   mutate(parameter=c("logkwN","S1N","dS1","dlogkwB","dS1B","ddS1B"), .before = p)%>%
-  select(-p, -msigma_sqaure, -starts_with("S_inv")) %>%
-  mutate(group = "Bases")
-
-rbind(pNA, pNB)%>%
-  as_grouped_data(groups = "group") %>%
-  flextable() %>%
-  colformat_double(digits = 2, na_str = " ")
-
 ```
-
-Here I consider a design space that consist of linear organic modifier gradients ranging from 10 to 270 min and organic modifier content ranging from 0.05 to 0.2 for MeOH and ACN. The tg is decreased by a factor of 3 and 9.
 
 ```{r design-space}
 hplcparam_candidates_df_270 = expand_grid(tg=seq(10,270,by=10), 
@@ -127,7 +100,6 @@ hplcparam_candidates_df_30<-hplcparam_candidates_df_270%>%
 # Read the results
 
 # Stan multiple analytes. Single form analytes. fi and tg for MeOH and ACN as design variables
-
 ## Compile stan models
 ```{r single-form-analytes-compilation}
 mod_analytes_gq= cmdstan_model("../stan/hplc-gra-single-form-analytes-gq.stan", stanc_options = list("O1"))
@@ -422,7 +394,6 @@ my.ggsave.png(.plot=p2, .filename=paste("single-form-analytes-logdFIM-comapretg.
 ```
 
 # Adjusted efficacy-figure
-
 ```{r adjusted-plot}
 summary_results_diff<-summary_results_diff%>%
   mutate(scale = if_else(str_detect(group, pattern ="30"),9,3))%>% 

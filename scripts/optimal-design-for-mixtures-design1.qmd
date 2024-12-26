@@ -17,7 +17,6 @@ format:
 
 ```{r setuphtml, include=FALSE}
 knitr::opts_chunk$set(cache=TRUE, message=FALSE, error=FALSE, warning=FALSE, comment=NA, out.width='95%')
-#usethis::create_github_token()
 ```
 
 # Setup
@@ -38,6 +37,7 @@ library(here)
 library(tibble)
 library(flextable)
 select = dplyr::select
+#usethis::create_github_token()
 # remotes::install_github("metrumresearchgroup/mrgmisc")
 # for parallel calculation use linux (mclaplly), i.e. Ubuntu 24.04 on Windows WSL
 #' Helper functions
@@ -147,7 +147,7 @@ mod_analytes$compile(compile_model_methods=TRUE,force_recompile=TRUE)
 
 ## Simulate retention times and create datasets
 
-The simulation involved n = 500 analytes with log P and analyte type (acid and base) drawn at random from the following distributions:  $logP_i \sim normal(2,2.2)$ and $Analyte_i \sim categorical(A=0.5,B=0.5)$. Log P values were truncated within 0.5 and 7. For signle pH scenarios the analyte form distribution was 40% for neutral, 30% for acidic, and 30% for basic form. 
+The simulation involved n = 500 analytes with log P and analyte type (acid and base) drawn at random from the following distributions:  $logP_i \sim normal(2,2.2)$ and $Analyte_i \sim categorical(A=0.5,B=0.5)$. Log P values were truncated within 0.5 and 7. For single pH scenarios the analyte form distribution was 40% for neutral, 30% for acidic, and 30% for basic form. 
   
 ```{r single-form-analytes-simulations}
 data_ma=hplcparam_candidates_df%>%filter(xpH==0)

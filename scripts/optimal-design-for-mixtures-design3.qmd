@@ -17,13 +17,11 @@ format:
 
 ```{r setuphtml, include=FALSE}
 knitr::opts_chunk$set(cache=TRUE, message=FALSE, error=FALSE, warning=FALSE, comment=NA, out.width='95%')
-#usethis::create_github_token()
 ```
 
 # Setup
 
 The packages we will use are listed below.
-
 ```{r setup}
 library(cmdstanr)
 library(pracma)
@@ -52,7 +50,6 @@ source("helper_functions.R")
 #' folder shortcuts:
 figures_dir1 <- here("deliv", "figures", "design3","N")
 tables_dir1  <- here("deliv", "tables", "design3","N")
-
 figures_dir5 <- here("deliv", "figures", "manuscript_d3")
 tables_dir5  <- here("deliv", "tables", "manuscript_d3")
 
@@ -77,7 +74,6 @@ ggsave(plot=.plot, filename=.filename, path=.path, height=.height, width=.width)
 # Introduction
 
 # Priors
-
 ```{r literature-priors}
 # fun_generate_priors defined in helper_functions.R
 priorsN_MeOH=fun_generate_priors("N_MeOH", logP=2.2)
@@ -114,7 +110,6 @@ mod_analytes$compile(compile_model_methods=TRUE,force_recompile=TRUE)
 ```
 
 ## Simulate retention times and create datasets
-
 ```{r single-form-analytes-simulations}
 data_ma=hplcparam_candidates_df%>%filter(xpH==0)
 nObs = nrow(data_ma);
@@ -222,7 +217,6 @@ fws_noprior_ref = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma
 ```
 
 ### Read the results and compare
-
 ```{r single-form-analytes-logDet-read, eval=T}
 chosen_indices_prior = c(65,66,209,210) # ref
 chosen_indices_noprior= c(65,66,209,210) # ref

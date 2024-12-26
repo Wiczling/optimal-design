@@ -17,12 +17,9 @@ format:
 
 ```{r setuphtml, include=FALSE}
 knitr::opts_chunk$set(cache=TRUE, message=FALSE, error=FALSE, warning=FALSE, comment=NA, out.width='95%')
-#usethis::create_github_token()
 ```
 
 # Setup
-
-The packages we will use are listed below.
 
 ```{r setup}
 library(cmdstanr)
@@ -68,8 +65,8 @@ my.ggsave.png <- function(.plot, .filename, .path=figures_dir, .height=7, .width
 ggsave(plot=.plot, filename=.filename, path=.path, height=.height, width=.width)
 }
 ```
-# Introduction
 
+# Introduction
 # Priors
 ```{r literature-priors}
 # fun_generate_priors defined in helper_functions.R
@@ -111,6 +108,7 @@ mod_analytes_sim = cmdstan_model("../stan/hplc-gra-single-form-analytes-sim.stan
 mod_analytes = cmdstan_model("../stan/hplc-gra-single-form-analytes.stan", stanc_options = list("O1"))
 mod_analytes$compile(compile_model_methods=TRUE,force_recompile=TRUE)
 ```
+
 ### maxtg=90
 ```{r single-form-analytes-simulations-2}
 data_ma=hplcparam_candidates_df_90%>%filter(xpH==0)
@@ -240,7 +238,6 @@ return(logdet)
 
 
 ### Read the results and compare - 90
-
 ```{r single-form-analytes-logDet-summary-90}
 chosen_indices_prior = c(65,66,209,210) # ref
 chosen_indices_noprior= c(65,66,209,210) # ref
@@ -322,7 +319,6 @@ p1=ggplot(summary_results_diff, aes(y=method,x=exp(value)))+
 ```
 
 ### Read the results and compare - 30
-
 ```{r single-form-analytes-logDet-summary-30}
 chosen_indices_prior = c(65,66,209,210) # ref
 chosen_indices_noprior= c(65,66,209,210) # ref

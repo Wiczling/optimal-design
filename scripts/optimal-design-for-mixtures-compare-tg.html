@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Paweł Wiczling*">
-<meta name="dcterms.date" content="2024-12-22">
+<meta name="dcterms.date" content="2024-12-26">
 
 <title>Leveraging Prior Knowledge for Improved Retention Prediction in Reversed-Phase HPLC</title>
 <style>
@@ -153,7 +153,7 @@ div.csl-indent {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">December 22, 2024</p>
+      <p class="date">December 26, 2024</p>
     </div>
   </div>
   
@@ -167,7 +167,6 @@ div.csl-indent {
 
 <section id="setup" class="level1">
 <h1>Setup</h1>
-<p>The packages we will use are listed below.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -225,8 +224,6 @@ div.csl-indent {
 </section>
 <section id="priors" class="level1">
 <h1>Priors</h1>
-<p>Priors are based on the follwoing article “Comparison of Chromatographic Stationary Phases Using a Bayesian-Based Multilevel Model” by Paweł Wiczling and Agnieszka Kamedulska published in Analytical Chemistry 2024 96 (3), 1310-1319.</p>
-<p>In this work a simplified approach is taken with the focus on the neutral, acidic and basic forms of an analytes and single chromatographic stationary phase - assuming the pKa and changes of pKa with organic modifier are known.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -237,28 +234,9 @@ div.csl-indent {
 <span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>priorsA<span class="ot">=</span><span class="fu">fun_generate_priors</span>(<span class="st">"A"</span>, <span class="at">logP=</span><span class="fl">2.2</span>)</span>
 <span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>priorsB<span class="ot">=</span><span class="fu">fun_generate_priors</span>(<span class="st">"B"</span>, <span class="at">logP=</span><span class="fl">2.2</span>)</span>
 <span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>priorsNB<span class="ot">=</span><span class="fu">fun_generate_priors</span>(<span class="st">"NB"</span>, <span class="at">logP=</span><span class="fl">2.2</span>)</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>priorsNA<span class="ot">=</span><span class="fu">fun_generate_priors</span>(<span class="st">"NA"</span>, <span class="at">logP=</span><span class="fl">2.2</span>)</span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>pNA<span class="ot">=</span><span class="fu">as.data.frame</span>(priorsNA)<span class="sc">%&gt;%</span></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">parameter=</span><span class="fu">c</span>(<span class="st">"logkwN"</span>,<span class="st">"S1N"</span>,<span class="st">"dS1"</span>,<span class="st">"dlogkwA"</span>,<span class="st">"dS1A"</span>,<span class="st">"ddS1A"</span>), <span class="at">.before =</span> p)<span class="sc">%&gt;%</span></span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>p, <span class="sc">-</span>msigma_sqaure, <span class="sc">-</span><span class="fu">starts_with</span>(<span class="st">"S_inv"</span>))<span class="sc">%&gt;%</span></span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">group =</span> <span class="st">"Acids"</span>)</span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>pNB <span class="ot">=</span> <span class="fu">as.data.frame</span>(priorsNB)<span class="sc">%&gt;%</span></span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>   <span class="fu">mutate</span>(<span class="at">parameter=</span><span class="fu">c</span>(<span class="st">"logkwN"</span>,<span class="st">"S1N"</span>,<span class="st">"dS1"</span>,<span class="st">"dlogkwB"</span>,<span class="st">"dS1B"</span>,<span class="st">"ddS1B"</span>), <span class="at">.before =</span> p)<span class="sc">%&gt;%</span></span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>p, <span class="sc">-</span>msigma_sqaure, <span class="sc">-</span><span class="fu">starts_with</span>(<span class="st">"S_inv"</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">group =</span> <span class="st">"Bases"</span>)</span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="fu">rbind</span>(pNA, pNB)<span class="sc">%&gt;%</span></span>
-<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as_grouped_data</span>(<span class="at">groups =</span> <span class="st">"group"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">flextable</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">colformat_double</span>(<span class="at">digits =</span> <span class="dv">2</span>, <span class="at">na_str =</span> <span class="st">" "</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>priorsNA<span class="ot">=</span><span class="fu">fun_generate_priors</span>(<span class="st">"NA"</span>, <span class="at">logP=</span><span class="fl">2.2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-<div class="cell-output-display">
-<div class="tabwid"><style>.cl-3f449ae8{}.cl-3f39069c{font-family:'DejaVu Sans';font-size:11pt;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-3f3d7d08{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:5pt;padding-top:5pt;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-3f3d7d12{margin:0;text-align:right;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:5pt;padding-top:5pt;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-3f3db16a{width:0.75in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-3f3db174{width:0.75in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-3f3db17e{width:0.75in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-3f3db17f{width:0.75in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-3f3db188{width:0.75in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-3f3db189{width:0.75in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}</style><table data-quarto-disable-processing="true" class="cl-3f449ae8"><thead><tr style="overflow-wrap:break-word;"><th class="cl-3f3db16a"><p class="cl-3f3d7d08"><span class="cl-3f39069c">group</span></p></th><th class="cl-3f3db16a"><p class="cl-3f3d7d08"><span class="cl-3f39069c">parameter</span></p></th><th class="cl-3f3db174"><p class="cl-3f3d7d12"><span class="cl-3f39069c">beta</span></p></th><th class="cl-3f3db174"><p class="cl-3f3d7d12"><span class="cl-3f39069c">theta</span></p></th><th class="cl-3f3db174"><p class="cl-3f3d7d12"><span class="cl-3f39069c">S.1</span></p></th><th class="cl-3f3db174"><p class="cl-3f3d7d12"><span class="cl-3f39069c">S.2</span></p></th><th class="cl-3f3db174"><p class="cl-3f3d7d12"><span class="cl-3f39069c">S.3</span></p></th><th class="cl-3f3db174"><p class="cl-3f3d7d12"><span class="cl-3f39069c">S.4</span></p></th><th class="cl-3f3db174"><p class="cl-3f3d7d12"><span class="cl-3f39069c">S.5</span></p></th><th class="cl-3f3db174"><p class="cl-3f3d7d12"><span class="cl-3f39069c">S.6</span></p></th></tr></thead><tbody><tr style="overflow-wrap:break-word;"><td class="cl-3f3db17e"><p class="cl-3f3d7d08"><span class="cl-3f39069c">Acids</span></p></td><td class="cl-3f3db17e"><p class="cl-3f3d7d08"><span class="cl-3f39069c"></span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c"> </span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c"> </span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c"> </span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c"> </span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c"> </span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c"> </span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c"> </span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c"> </span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-3f3db17e"><p class="cl-3f3d7d08"><span class="cl-3f39069c"></span></p></td><td class="cl-3f3db17e"><p class="cl-3f3d7d08"><span class="cl-3f39069c">logkwN</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.84</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">3.60</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.85</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.74</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-3f3db17e"><p class="cl-3f3d7d08"><span class="cl-3f39069c"></span></p></td><td class="cl-3f3db17e"><p class="cl-3f3d7d08"><span class="cl-3f39069c">S1N</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.51</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">4.92</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.74</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.86</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-3f3db17e"><p class="cl-3f3d7d08"><span class="cl-3f39069c"></span></p></td><td class="cl-3f3db17e"><p class="cl-3f3d7d08"><span class="cl-3f39069c">dS1</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.61</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.30</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-3f3db17e"><p class="cl-3f3d7d08"><span class="cl-3f39069c"></span></p></td><td class="cl-3f3db17e"><p class="cl-3f3d7d08"><span class="cl-3f39069c">dlogkwA</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">-0.79</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.35</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-3f3db17e"><p class="cl-3f3d7d08"><span class="cl-3f39069c"></span></p></td><td class="cl-3f3db17e"><p class="cl-3f3d7d08"><span class="cl-3f39069c">dS1A</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.17</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.48</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-3f3db17e"><p class="cl-3f3d7d08"><span class="cl-3f39069c"></span></p></td><td class="cl-3f3db17e"><p class="cl-3f3d7d08"><span class="cl-3f39069c">ddS1A</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.28</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.30</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-3f3db17e"><p class="cl-3f3d7d08"><span class="cl-3f39069c">Bases</span></p></td><td class="cl-3f3db17e"><p class="cl-3f3d7d08"><span class="cl-3f39069c"></span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c"> </span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c"> </span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c"> </span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c"> </span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c"> </span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c"> </span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c"> </span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c"> </span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-3f3db17e"><p class="cl-3f3d7d08"><span class="cl-3f39069c"></span></p></td><td class="cl-3f3db17e"><p class="cl-3f3d7d08"><span class="cl-3f39069c">logkwN</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.84</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">3.60</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.85</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.74</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-3f3db17e"><p class="cl-3f3d7d08"><span class="cl-3f39069c"></span></p></td><td class="cl-3f3db17e"><p class="cl-3f3d7d08"><span class="cl-3f39069c">S1N</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.51</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">4.92</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.74</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.86</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-3f3db17e"><p class="cl-3f3d7d08"><span class="cl-3f39069c"></span></p></td><td class="cl-3f3db17e"><p class="cl-3f3d7d08"><span class="cl-3f39069c">dS1</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.61</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.30</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-3f3db17e"><p class="cl-3f3d7d08"><span class="cl-3f39069c"></span></p></td><td class="cl-3f3db17e"><p class="cl-3f3d7d08"><span class="cl-3f39069c">dlogkwB</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">-0.97</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.35</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-3f3db17e"><p class="cl-3f3d7d08"><span class="cl-3f39069c"></span></p></td><td class="cl-3f3db17e"><p class="cl-3f3d7d08"><span class="cl-3f39069c">dS1B</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.12</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.48</span></p></td><td class="cl-3f3db17f"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-3f3db188"><p class="cl-3f3d7d08"><span class="cl-3f39069c"></span></p></td><td class="cl-3f3db188"><p class="cl-3f3d7d08"><span class="cl-3f39069c">ddS1B</span></p></td><td class="cl-3f3db189"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db189"><p class="cl-3f3d7d12"><span class="cl-3f39069c">-0.67</span></p></td><td class="cl-3f3db189"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db189"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db189"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db189"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db189"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.00</span></p></td><td class="cl-3f3db189"><p class="cl-3f3d7d12"><span class="cl-3f39069c">0.30</span></p></td></tr></tbody></table></div>
 </div>
-</div>
-<p>Here I consider a design space that consist of linear organic modifier gradients ranging from 10 to 270 min and organic modifier content ranging from 0.05 to 0.2 for MeOH and ACN. The tg is decreased by a factor of 3 and 9.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -796,7 +774,7 @@ Chain 1 finished in 0.0 seconds.</code></pre>
 <span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a>tab1</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
-<div class="tabwid"><style>.cl-b7c09f24{}.cl-b7b6a0fa{font-family:'DejaVu Sans';font-size:11pt;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-b7baaec0{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:5pt;padding-top:5pt;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-b7bae0ca{width:1.913in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-b7bae0d4{width:1.121in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-b7bae0d5{width:1.626in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-b7bae0de{width:1.913in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-b7bae0df{width:1.121in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-b7bae0e8{width:1.626in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-b7bae0e9{width:1.913in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-b7bae0f2{width:1.121in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-b7bae0f3{width:1.626in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-b7bae0f4{width:1.913in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-b7bae0fc{width:1.121in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-b7bae0fd{width:1.626in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}</style><table data-quarto-disable-processing="true" class="cl-b7c09f24"><thead><tr style="overflow-wrap:break-word;"><th class="cl-b7bae0ca"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">group</span></p></th><th class="cl-b7bae0d4"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">method</span></p></th><th class="cl-b7bae0d5"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">adj. efficiency</span></p></th></tr></thead><tbody><tr style="overflow-wrap:break-word;"><td class="cl-b7bae0de"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">maxtg 270 vs 30 min</span></p></td><td class="cl-b7bae0df"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa"></span></p></td><td class="cl-b7bae0e8"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa"></span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-b7bae0e9"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa"></span></p></td><td class="cl-b7bae0f2"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">noprior_3</span></p></td><td class="cl-b7bae0f3"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">5.15 (0.13 - 5.95)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-b7bae0e9"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa"></span></p></td><td class="cl-b7bae0f2"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">noprior_4</span></p></td><td class="cl-b7bae0f3"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">4.63 (0.13 - 5.72)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-b7bae0e9"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa"></span></p></td><td class="cl-b7bae0f2"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">noprior_5</span></p></td><td class="cl-b7bae0f3"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">4.6 (0.13 - 5.71)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-b7bae0e9"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa"></span></p></td><td class="cl-b7bae0f2"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">noprior_ref</span></p></td><td class="cl-b7bae0f3"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">4.14 (0.13 - 5.57)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-b7bae0e9"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa"></span></p></td><td class="cl-b7bae0f2"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">prior_2</span></p></td><td class="cl-b7bae0f3"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">1.18 (0.13 - 1.51)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-b7bae0e9"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa"></span></p></td><td class="cl-b7bae0f2"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">prior_3</span></p></td><td class="cl-b7bae0f3"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">2.36 (0.13 - 4.07)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-b7bae0e9"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa"></span></p></td><td class="cl-b7bae0f2"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">prior_4</span></p></td><td class="cl-b7bae0f3"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">2.5 (0.12 - 4.1)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-b7bae0e9"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa"></span></p></td><td class="cl-b7bae0f2"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">prior_5</span></p></td><td class="cl-b7bae0f3"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">2.52 (0.12 - 4.12)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-b7bae0e9"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa"></span></p></td><td class="cl-b7bae0f2"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">prior_ref</span></p></td><td class="cl-b7bae0f3"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">2.47 (0.14 - 3.93)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-b7bae0de"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">maxtg 270 vs 90 min</span></p></td><td class="cl-b7bae0df"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa"></span></p></td><td class="cl-b7bae0e8"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa"></span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-b7bae0e9"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa"></span></p></td><td class="cl-b7bae0f2"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">noprior_3</span></p></td><td class="cl-b7bae0f3"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">2.26 (0.34 - 2.54)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-b7bae0e9"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa"></span></p></td><td class="cl-b7bae0f2"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">noprior_4</span></p></td><td class="cl-b7bae0f3"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">2.17 (0.35 - 2.45)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-b7bae0e9"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa"></span></p></td><td class="cl-b7bae0f2"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">noprior_5</span></p></td><td class="cl-b7bae0f3"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">2.16 (0.34 - 2.44)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-b7bae0e9"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa"></span></p></td><td class="cl-b7bae0f2"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">noprior_ref</span></p></td><td class="cl-b7bae0f3"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">2.04 (0.34 - 2.41)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-b7bae0e9"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa"></span></p></td><td class="cl-b7bae0f2"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">prior_2</span></p></td><td class="cl-b7bae0f3"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">1.08 (0.34 - 1.24)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-b7bae0e9"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa"></span></p></td><td class="cl-b7bae0f2"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">prior_3</span></p></td><td class="cl-b7bae0f3"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">1.73 (0.34 - 2.3)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-b7bae0e9"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa"></span></p></td><td class="cl-b7bae0f2"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">prior_4</span></p></td><td class="cl-b7bae0f3"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">1.8 (0.34 - 2.24)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-b7bae0e9"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa"></span></p></td><td class="cl-b7bae0f2"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">prior_5</span></p></td><td class="cl-b7bae0f3"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">1.8 (0.34 - 2.23)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-b7bae0f4"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa"></span></p></td><td class="cl-b7bae0fc"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">prior_ref</span></p></td><td class="cl-b7bae0fd"><p class="cl-b7baaec0"><span class="cl-b7b6a0fa">1.73 (0.36 - 2.2)</span></p></td></tr></tbody></table></div>
+<div class="tabwid"><style>.cl-222f4f12{}.cl-2224ba52{font-family:'DejaVu Sans';font-size:11pt;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-2229e9aa{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:5pt;padding-top:5pt;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-222a1c40{width:1.913in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-222a1c4a{width:1.121in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-222a1c4b{width:1.626in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-222a1c4c{width:1.913in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-222a1c54{width:1.121in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-222a1c55{width:1.626in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-222a1c56{width:1.913in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-222a1c5e{width:1.121in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-222a1c5f{width:1.626in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-222a1c60{width:1.913in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-222a1c68{width:1.121in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-222a1c69{width:1.626in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}</style><table data-quarto-disable-processing="true" class="cl-222f4f12"><thead><tr style="overflow-wrap:break-word;"><th class="cl-222a1c40"><p class="cl-2229e9aa"><span class="cl-2224ba52">group</span></p></th><th class="cl-222a1c4a"><p class="cl-2229e9aa"><span class="cl-2224ba52">method</span></p></th><th class="cl-222a1c4b"><p class="cl-2229e9aa"><span class="cl-2224ba52">adj. efficiency</span></p></th></tr></thead><tbody><tr style="overflow-wrap:break-word;"><td class="cl-222a1c4c"><p class="cl-2229e9aa"><span class="cl-2224ba52">maxtg 270 vs 30 min</span></p></td><td class="cl-222a1c54"><p class="cl-2229e9aa"><span class="cl-2224ba52"></span></p></td><td class="cl-222a1c55"><p class="cl-2229e9aa"><span class="cl-2224ba52"></span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-222a1c56"><p class="cl-2229e9aa"><span class="cl-2224ba52"></span></p></td><td class="cl-222a1c5e"><p class="cl-2229e9aa"><span class="cl-2224ba52">noprior_3</span></p></td><td class="cl-222a1c5f"><p class="cl-2229e9aa"><span class="cl-2224ba52">5.15 (0.13 - 5.95)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-222a1c56"><p class="cl-2229e9aa"><span class="cl-2224ba52"></span></p></td><td class="cl-222a1c5e"><p class="cl-2229e9aa"><span class="cl-2224ba52">noprior_4</span></p></td><td class="cl-222a1c5f"><p class="cl-2229e9aa"><span class="cl-2224ba52">4.63 (0.13 - 5.72)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-222a1c56"><p class="cl-2229e9aa"><span class="cl-2224ba52"></span></p></td><td class="cl-222a1c5e"><p class="cl-2229e9aa"><span class="cl-2224ba52">noprior_5</span></p></td><td class="cl-222a1c5f"><p class="cl-2229e9aa"><span class="cl-2224ba52">4.6 (0.13 - 5.71)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-222a1c56"><p class="cl-2229e9aa"><span class="cl-2224ba52"></span></p></td><td class="cl-222a1c5e"><p class="cl-2229e9aa"><span class="cl-2224ba52">noprior_ref</span></p></td><td class="cl-222a1c5f"><p class="cl-2229e9aa"><span class="cl-2224ba52">4.14 (0.13 - 5.57)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-222a1c56"><p class="cl-2229e9aa"><span class="cl-2224ba52"></span></p></td><td class="cl-222a1c5e"><p class="cl-2229e9aa"><span class="cl-2224ba52">prior_2</span></p></td><td class="cl-222a1c5f"><p class="cl-2229e9aa"><span class="cl-2224ba52">1.18 (0.13 - 1.51)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-222a1c56"><p class="cl-2229e9aa"><span class="cl-2224ba52"></span></p></td><td class="cl-222a1c5e"><p class="cl-2229e9aa"><span class="cl-2224ba52">prior_3</span></p></td><td class="cl-222a1c5f"><p class="cl-2229e9aa"><span class="cl-2224ba52">2.36 (0.13 - 4.07)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-222a1c56"><p class="cl-2229e9aa"><span class="cl-2224ba52"></span></p></td><td class="cl-222a1c5e"><p class="cl-2229e9aa"><span class="cl-2224ba52">prior_4</span></p></td><td class="cl-222a1c5f"><p class="cl-2229e9aa"><span class="cl-2224ba52">2.5 (0.12 - 4.1)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-222a1c56"><p class="cl-2229e9aa"><span class="cl-2224ba52"></span></p></td><td class="cl-222a1c5e"><p class="cl-2229e9aa"><span class="cl-2224ba52">prior_5</span></p></td><td class="cl-222a1c5f"><p class="cl-2229e9aa"><span class="cl-2224ba52">2.52 (0.12 - 4.12)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-222a1c56"><p class="cl-2229e9aa"><span class="cl-2224ba52"></span></p></td><td class="cl-222a1c5e"><p class="cl-2229e9aa"><span class="cl-2224ba52">prior_ref</span></p></td><td class="cl-222a1c5f"><p class="cl-2229e9aa"><span class="cl-2224ba52">2.47 (0.14 - 3.93)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-222a1c4c"><p class="cl-2229e9aa"><span class="cl-2224ba52">maxtg 270 vs 90 min</span></p></td><td class="cl-222a1c54"><p class="cl-2229e9aa"><span class="cl-2224ba52"></span></p></td><td class="cl-222a1c55"><p class="cl-2229e9aa"><span class="cl-2224ba52"></span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-222a1c56"><p class="cl-2229e9aa"><span class="cl-2224ba52"></span></p></td><td class="cl-222a1c5e"><p class="cl-2229e9aa"><span class="cl-2224ba52">noprior_3</span></p></td><td class="cl-222a1c5f"><p class="cl-2229e9aa"><span class="cl-2224ba52">2.26 (0.34 - 2.54)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-222a1c56"><p class="cl-2229e9aa"><span class="cl-2224ba52"></span></p></td><td class="cl-222a1c5e"><p class="cl-2229e9aa"><span class="cl-2224ba52">noprior_4</span></p></td><td class="cl-222a1c5f"><p class="cl-2229e9aa"><span class="cl-2224ba52">2.17 (0.35 - 2.45)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-222a1c56"><p class="cl-2229e9aa"><span class="cl-2224ba52"></span></p></td><td class="cl-222a1c5e"><p class="cl-2229e9aa"><span class="cl-2224ba52">noprior_5</span></p></td><td class="cl-222a1c5f"><p class="cl-2229e9aa"><span class="cl-2224ba52">2.16 (0.34 - 2.44)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-222a1c56"><p class="cl-2229e9aa"><span class="cl-2224ba52"></span></p></td><td class="cl-222a1c5e"><p class="cl-2229e9aa"><span class="cl-2224ba52">noprior_ref</span></p></td><td class="cl-222a1c5f"><p class="cl-2229e9aa"><span class="cl-2224ba52">2.04 (0.34 - 2.41)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-222a1c56"><p class="cl-2229e9aa"><span class="cl-2224ba52"></span></p></td><td class="cl-222a1c5e"><p class="cl-2229e9aa"><span class="cl-2224ba52">prior_2</span></p></td><td class="cl-222a1c5f"><p class="cl-2229e9aa"><span class="cl-2224ba52">1.08 (0.34 - 1.24)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-222a1c56"><p class="cl-2229e9aa"><span class="cl-2224ba52"></span></p></td><td class="cl-222a1c5e"><p class="cl-2229e9aa"><span class="cl-2224ba52">prior_3</span></p></td><td class="cl-222a1c5f"><p class="cl-2229e9aa"><span class="cl-2224ba52">1.73 (0.34 - 2.3)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-222a1c56"><p class="cl-2229e9aa"><span class="cl-2224ba52"></span></p></td><td class="cl-222a1c5e"><p class="cl-2229e9aa"><span class="cl-2224ba52">prior_4</span></p></td><td class="cl-222a1c5f"><p class="cl-2229e9aa"><span class="cl-2224ba52">1.8 (0.34 - 2.24)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-222a1c56"><p class="cl-2229e9aa"><span class="cl-2224ba52"></span></p></td><td class="cl-222a1c5e"><p class="cl-2229e9aa"><span class="cl-2224ba52">prior_5</span></p></td><td class="cl-222a1c5f"><p class="cl-2229e9aa"><span class="cl-2224ba52">1.8 (0.34 - 2.23)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-222a1c60"><p class="cl-2229e9aa"><span class="cl-2224ba52"></span></p></td><td class="cl-222a1c68"><p class="cl-2229e9aa"><span class="cl-2224ba52">prior_ref</span></p></td><td class="cl-222a1c69"><p class="cl-2229e9aa"><span class="cl-2224ba52">1.73 (0.36 - 2.2)</span></p></td></tr></tbody></table></div>
 </div>
 </div>
 </section>
@@ -1372,458 +1350,429 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 <span id="cb24-21"><a href="#cb24-21" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb24-22"><a href="#cb24-22" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb24-23"><a href="#cb24-23" aria-hidden="true" tabindex="-1"></a><span class="fu"># Setup</span></span>
-<span id="cb24-24"><a href="#cb24-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-25"><a href="#cb24-25" aria-hidden="true" tabindex="-1"></a>The packages we will use are listed below.</span>
-<span id="cb24-26"><a href="#cb24-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-27"><a href="#cb24-27" aria-hidden="true" tabindex="-1"></a><span class="in">```{r setup}</span></span>
-<span id="cb24-28"><a href="#cb24-28" aria-hidden="true" tabindex="-1"></a><span class="in">library(cmdstanr)</span></span>
-<span id="cb24-29"><a href="#cb24-29" aria-hidden="true" tabindex="-1"></a><span class="in">library(pracma)</span></span>
-<span id="cb24-30"><a href="#cb24-30" aria-hidden="true" tabindex="-1"></a><span class="in">library(numDeriv)</span></span>
-<span id="cb24-31"><a href="#cb24-31" aria-hidden="true" tabindex="-1"></a><span class="in">library(dplyr)</span></span>
-<span id="cb24-32"><a href="#cb24-32" aria-hidden="true" tabindex="-1"></a><span class="in">library(ggplot2)</span></span>
-<span id="cb24-33"><a href="#cb24-33" aria-hidden="true" tabindex="-1"></a><span class="in">library(mvtnorm)</span></span>
-<span id="cb24-34"><a href="#cb24-34" aria-hidden="true" tabindex="-1"></a><span class="in">library(tidyr)</span></span>
-<span id="cb24-35"><a href="#cb24-35" aria-hidden="true" tabindex="-1"></a><span class="in">library(purrr)</span></span>
-<span id="cb24-36"><a href="#cb24-36" aria-hidden="true" tabindex="-1"></a><span class="in">library(mrgmisc)</span></span>
-<span id="cb24-37"><a href="#cb24-37" aria-hidden="true" tabindex="-1"></a><span class="in">library(patchwork)</span></span>
-<span id="cb24-38"><a href="#cb24-38" aria-hidden="true" tabindex="-1"></a><span class="in">library(stringr)</span></span>
-<span id="cb24-39"><a href="#cb24-39" aria-hidden="true" tabindex="-1"></a><span class="in">library(reshape2)</span></span>
-<span id="cb24-40"><a href="#cb24-40" aria-hidden="true" tabindex="-1"></a><span class="in">library(here)</span></span>
-<span id="cb24-41"><a href="#cb24-41" aria-hidden="true" tabindex="-1"></a><span class="in">library(tibble)</span></span>
-<span id="cb24-42"><a href="#cb24-42" aria-hidden="true" tabindex="-1"></a><span class="in">library(flextable)</span></span>
-<span id="cb24-43"><a href="#cb24-43" aria-hidden="true" tabindex="-1"></a><span class="in">select = dplyr::select</span></span>
-<span id="cb24-44"><a href="#cb24-44" aria-hidden="true" tabindex="-1"></a><span class="in"># remotes::install_github("metrumresearchgroup/mrgmisc")</span></span>
-<span id="cb24-45"><a href="#cb24-45" aria-hidden="true" tabindex="-1"></a><span class="in"># for parallel calculation use linux (mclaplly), i.e. Ubuntu 24.04 on Windows WSL</span></span>
-<span id="cb24-46"><a href="#cb24-46" aria-hidden="true" tabindex="-1"></a><span class="in"># usethis::edit_r_environ(), add PROCESSX_NOTIFY_OLD_SIGCHLD = 1 ????</span></span>
-<span id="cb24-47"><a href="#cb24-47" aria-hidden="true" tabindex="-1"></a><span class="in">#' Helper functions</span></span>
-<span id="cb24-48"><a href="#cb24-48" aria-hidden="true" tabindex="-1"></a><span class="in">source("helper_functions.R")</span></span>
-<span id="cb24-49"><a href="#cb24-49" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb24-24"><a href="#cb24-24" aria-hidden="true" tabindex="-1"></a><span class="in">```{r setup}</span></span>
+<span id="cb24-25"><a href="#cb24-25" aria-hidden="true" tabindex="-1"></a><span class="in">library(cmdstanr)</span></span>
+<span id="cb24-26"><a href="#cb24-26" aria-hidden="true" tabindex="-1"></a><span class="in">library(pracma)</span></span>
+<span id="cb24-27"><a href="#cb24-27" aria-hidden="true" tabindex="-1"></a><span class="in">library(numDeriv)</span></span>
+<span id="cb24-28"><a href="#cb24-28" aria-hidden="true" tabindex="-1"></a><span class="in">library(dplyr)</span></span>
+<span id="cb24-29"><a href="#cb24-29" aria-hidden="true" tabindex="-1"></a><span class="in">library(ggplot2)</span></span>
+<span id="cb24-30"><a href="#cb24-30" aria-hidden="true" tabindex="-1"></a><span class="in">library(mvtnorm)</span></span>
+<span id="cb24-31"><a href="#cb24-31" aria-hidden="true" tabindex="-1"></a><span class="in">library(tidyr)</span></span>
+<span id="cb24-32"><a href="#cb24-32" aria-hidden="true" tabindex="-1"></a><span class="in">library(purrr)</span></span>
+<span id="cb24-33"><a href="#cb24-33" aria-hidden="true" tabindex="-1"></a><span class="in">library(mrgmisc)</span></span>
+<span id="cb24-34"><a href="#cb24-34" aria-hidden="true" tabindex="-1"></a><span class="in">library(patchwork)</span></span>
+<span id="cb24-35"><a href="#cb24-35" aria-hidden="true" tabindex="-1"></a><span class="in">library(stringr)</span></span>
+<span id="cb24-36"><a href="#cb24-36" aria-hidden="true" tabindex="-1"></a><span class="in">library(reshape2)</span></span>
+<span id="cb24-37"><a href="#cb24-37" aria-hidden="true" tabindex="-1"></a><span class="in">library(here)</span></span>
+<span id="cb24-38"><a href="#cb24-38" aria-hidden="true" tabindex="-1"></a><span class="in">library(tibble)</span></span>
+<span id="cb24-39"><a href="#cb24-39" aria-hidden="true" tabindex="-1"></a><span class="in">library(flextable)</span></span>
+<span id="cb24-40"><a href="#cb24-40" aria-hidden="true" tabindex="-1"></a><span class="in">select = dplyr::select</span></span>
+<span id="cb24-41"><a href="#cb24-41" aria-hidden="true" tabindex="-1"></a><span class="in"># remotes::install_github("metrumresearchgroup/mrgmisc")</span></span>
+<span id="cb24-42"><a href="#cb24-42" aria-hidden="true" tabindex="-1"></a><span class="in"># for parallel calculation use linux (mclaplly), i.e. Ubuntu 24.04 on Windows WSL</span></span>
+<span id="cb24-43"><a href="#cb24-43" aria-hidden="true" tabindex="-1"></a><span class="in"># usethis::edit_r_environ(), add PROCESSX_NOTIFY_OLD_SIGCHLD = 1 ????</span></span>
+<span id="cb24-44"><a href="#cb24-44" aria-hidden="true" tabindex="-1"></a><span class="in">#' Helper functions</span></span>
+<span id="cb24-45"><a href="#cb24-45" aria-hidden="true" tabindex="-1"></a><span class="in">source("helper_functions.R")</span></span>
+<span id="cb24-46"><a href="#cb24-46" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb24-47"><a href="#cb24-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-48"><a href="#cb24-48" aria-hidden="true" tabindex="-1"></a><span class="in">```{r paths}</span></span>
+<span id="cb24-49"><a href="#cb24-49" aria-hidden="true" tabindex="-1"></a><span class="in">#' folder shortcuts:</span></span>
 <span id="cb24-50"><a href="#cb24-50" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-51"><a href="#cb24-51" aria-hidden="true" tabindex="-1"></a><span class="in">```{r paths}</span></span>
-<span id="cb24-52"><a href="#cb24-52" aria-hidden="true" tabindex="-1"></a><span class="in">#' folder shortcuts:</span></span>
+<span id="cb24-51"><a href="#cb24-51" aria-hidden="true" tabindex="-1"></a><span class="in">figures_dir&lt;- here("deliv", "figures", "manuscript")</span></span>
+<span id="cb24-52"><a href="#cb24-52" aria-hidden="true" tabindex="-1"></a><span class="in">tables_dir  &lt;- here("deliv", "tables", "manuscript")</span></span>
 <span id="cb24-53"><a href="#cb24-53" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-54"><a href="#cb24-54" aria-hidden="true" tabindex="-1"></a><span class="in">figures_dir&lt;- here("deliv", "figures", "manuscript")</span></span>
-<span id="cb24-55"><a href="#cb24-55" aria-hidden="true" tabindex="-1"></a><span class="in">tables_dir  &lt;- here("deliv", "tables", "manuscript")</span></span>
+<span id="cb24-54"><a href="#cb24-54" aria-hidden="true" tabindex="-1"></a><span class="in">if (!file.exists(figures_dir)) dir.create(figures_dir, recursive = T)</span></span>
+<span id="cb24-55"><a href="#cb24-55" aria-hidden="true" tabindex="-1"></a><span class="in">if (!file.exists(tables_dir)) dir.create(tables_dir, recursive = T)</span></span>
 <span id="cb24-56"><a href="#cb24-56" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-57"><a href="#cb24-57" aria-hidden="true" tabindex="-1"></a><span class="in">if (!file.exists(figures_dir)) dir.create(figures_dir, recursive = T)</span></span>
-<span id="cb24-58"><a href="#cb24-58" aria-hidden="true" tabindex="-1"></a><span class="in">if (!file.exists(tables_dir)) dir.create(tables_dir, recursive = T)</span></span>
+<span id="cb24-57"><a href="#cb24-57" aria-hidden="true" tabindex="-1"></a><span class="in">thisScript &lt;- "optimal-design-for-mixtures-compare-tg"</span></span>
+<span id="cb24-58"><a href="#cb24-58" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb24-59"><a href="#cb24-59" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-60"><a href="#cb24-60" aria-hidden="true" tabindex="-1"></a><span class="in">thisScript &lt;- "optimal-design-for-mixtures-compare-tg"</span></span>
-<span id="cb24-61"><a href="#cb24-61" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb24-62"><a href="#cb24-62" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-63"><a href="#cb24-63" aria-hidden="true" tabindex="-1"></a><span class="in">```{r helper-save-functions}</span></span>
-<span id="cb24-64"><a href="#cb24-64" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave &lt;- function(.plot, .filename, .path=figures_dir, .height= 7, .width= 6) {</span></span>
+<span id="cb24-60"><a href="#cb24-60" aria-hidden="true" tabindex="-1"></a><span class="in">```{r helper-save-functions}</span></span>
+<span id="cb24-61"><a href="#cb24-61" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave &lt;- function(.plot, .filename, .path=figures_dir, .height= 7, .width= 6) {</span></span>
+<span id="cb24-62"><a href="#cb24-62" aria-hidden="true" tabindex="-1"></a><span class="in">ggsave(plot=.plot, filename=.filename, path=.path, height=.height, width=.width)</span></span>
+<span id="cb24-63"><a href="#cb24-63" aria-hidden="true" tabindex="-1"></a><span class="in">}</span></span>
+<span id="cb24-64"><a href="#cb24-64" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave.png &lt;- function(.plot, .filename, .path=figures_dir, .height=7, .width= 6) {</span></span>
 <span id="cb24-65"><a href="#cb24-65" aria-hidden="true" tabindex="-1"></a><span class="in">ggsave(plot=.plot, filename=.filename, path=.path, height=.height, width=.width)</span></span>
 <span id="cb24-66"><a href="#cb24-66" aria-hidden="true" tabindex="-1"></a><span class="in">}</span></span>
-<span id="cb24-67"><a href="#cb24-67" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave.png &lt;- function(.plot, .filename, .path=figures_dir, .height=7, .width= 6) {</span></span>
-<span id="cb24-68"><a href="#cb24-68" aria-hidden="true" tabindex="-1"></a><span class="in">ggsave(plot=.plot, filename=.filename, path=.path, height=.height, width=.width)</span></span>
-<span id="cb24-69"><a href="#cb24-69" aria-hidden="true" tabindex="-1"></a><span class="in">}</span></span>
-<span id="cb24-70"><a href="#cb24-70" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb24-71"><a href="#cb24-71" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-72"><a href="#cb24-72" aria-hidden="true" tabindex="-1"></a><span class="fu"># Introduction</span></span>
-<span id="cb24-73"><a href="#cb24-73" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-74"><a href="#cb24-74" aria-hidden="true" tabindex="-1"></a><span class="fu"># Priors</span></span>
-<span id="cb24-75"><a href="#cb24-75" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-76"><a href="#cb24-76" aria-hidden="true" tabindex="-1"></a>Priors are based on the follwoing article "Comparison of Chromatographic Stationary Phases Using a Bayesian-Based Multilevel Model" by Paweł Wiczling and Agnieszka Kamedulska published in Analytical Chemistry 2024 96 (3), 1310-1319. </span>
-<span id="cb24-77"><a href="#cb24-77" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-78"><a href="#cb24-78" aria-hidden="true" tabindex="-1"></a>In this work a simplified approach is taken with the focus on the neutral, acidic and basic forms of an analytes and single chromatographic stationary phase - assuming the pKa and changes of pKa with organic modifier are known.</span>
-<span id="cb24-79"><a href="#cb24-79" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-80"><a href="#cb24-80" aria-hidden="true" tabindex="-1"></a><span class="in">```{r literature-priors}</span></span>
-<span id="cb24-81"><a href="#cb24-81" aria-hidden="true" tabindex="-1"></a><span class="in"># fun_generate_priors defined in helper_functions.R</span></span>
-<span id="cb24-82"><a href="#cb24-82" aria-hidden="true" tabindex="-1"></a><span class="in">priorsN_MeOH=fun_generate_priors("N_MeOH", logP=2.2)</span></span>
-<span id="cb24-83"><a href="#cb24-83" aria-hidden="true" tabindex="-1"></a><span class="in">priorsN_ACN=fun_generate_priors("N_ACN", logP=2.2)</span></span>
-<span id="cb24-84"><a href="#cb24-84" aria-hidden="true" tabindex="-1"></a><span class="in">priorsN=fun_generate_priors("N", logP=2.2)</span></span>
-<span id="cb24-85"><a href="#cb24-85" aria-hidden="true" tabindex="-1"></a><span class="in">priorsA=fun_generate_priors("A", logP=2.2)</span></span>
-<span id="cb24-86"><a href="#cb24-86" aria-hidden="true" tabindex="-1"></a><span class="in">priorsB=fun_generate_priors("B", logP=2.2)</span></span>
-<span id="cb24-87"><a href="#cb24-87" aria-hidden="true" tabindex="-1"></a><span class="in">priorsNB=fun_generate_priors("NB", logP=2.2)</span></span>
-<span id="cb24-88"><a href="#cb24-88" aria-hidden="true" tabindex="-1"></a><span class="in">priorsNA=fun_generate_priors("NA", logP=2.2)</span></span>
-<span id="cb24-89"><a href="#cb24-89" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-90"><a href="#cb24-90" aria-hidden="true" tabindex="-1"></a><span class="in">pNA=as.data.frame(priorsNA)%&gt;%</span></span>
-<span id="cb24-91"><a href="#cb24-91" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(parameter=c("logkwN","S1N","dS1","dlogkwA","dS1A","ddS1A"), .before = p)%&gt;%</span></span>
-<span id="cb24-92"><a href="#cb24-92" aria-hidden="true" tabindex="-1"></a><span class="in">  select(-p, -msigma_sqaure, -starts_with("S_inv"))%&gt;%</span></span>
-<span id="cb24-93"><a href="#cb24-93" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(group = "Acids")</span></span>
+<span id="cb24-67"><a href="#cb24-67" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb24-68"><a href="#cb24-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-69"><a href="#cb24-69" aria-hidden="true" tabindex="-1"></a><span class="fu"># Introduction</span></span>
+<span id="cb24-70"><a href="#cb24-70" aria-hidden="true" tabindex="-1"></a><span class="fu"># Priors</span></span>
+<span id="cb24-71"><a href="#cb24-71" aria-hidden="true" tabindex="-1"></a><span class="in">```{r literature-priors}</span></span>
+<span id="cb24-72"><a href="#cb24-72" aria-hidden="true" tabindex="-1"></a><span class="in"># fun_generate_priors defined in helper_functions.R</span></span>
+<span id="cb24-73"><a href="#cb24-73" aria-hidden="true" tabindex="-1"></a><span class="in">priorsN_MeOH=fun_generate_priors("N_MeOH", logP=2.2)</span></span>
+<span id="cb24-74"><a href="#cb24-74" aria-hidden="true" tabindex="-1"></a><span class="in">priorsN_ACN=fun_generate_priors("N_ACN", logP=2.2)</span></span>
+<span id="cb24-75"><a href="#cb24-75" aria-hidden="true" tabindex="-1"></a><span class="in">priorsN=fun_generate_priors("N", logP=2.2)</span></span>
+<span id="cb24-76"><a href="#cb24-76" aria-hidden="true" tabindex="-1"></a><span class="in">priorsA=fun_generate_priors("A", logP=2.2)</span></span>
+<span id="cb24-77"><a href="#cb24-77" aria-hidden="true" tabindex="-1"></a><span class="in">priorsB=fun_generate_priors("B", logP=2.2)</span></span>
+<span id="cb24-78"><a href="#cb24-78" aria-hidden="true" tabindex="-1"></a><span class="in">priorsNB=fun_generate_priors("NB", logP=2.2)</span></span>
+<span id="cb24-79"><a href="#cb24-79" aria-hidden="true" tabindex="-1"></a><span class="in">priorsNA=fun_generate_priors("NA", logP=2.2)</span></span>
+<span id="cb24-80"><a href="#cb24-80" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb24-81"><a href="#cb24-81" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-82"><a href="#cb24-82" aria-hidden="true" tabindex="-1"></a><span class="in">```{r design-space}</span></span>
+<span id="cb24-83"><a href="#cb24-83" aria-hidden="true" tabindex="-1"></a><span class="in">hplcparam_candidates_df_270 = expand_grid(tg=seq(10,270,by=10), </span></span>
+<span id="cb24-84"><a href="#cb24-84" aria-hidden="true" tabindex="-1"></a><span class="in">                                          td=2.1, </span></span>
+<span id="cb24-85"><a href="#cb24-85" aria-hidden="true" tabindex="-1"></a><span class="in">                                          to=0.532,</span></span>
+<span id="cb24-86"><a href="#cb24-86" aria-hidden="true" tabindex="-1"></a><span class="in">                                          te=0.04, </span></span>
+<span id="cb24-87"><a href="#cb24-87" aria-hidden="true" tabindex="-1"></a><span class="in">                                          fio = seq(0.05, 0.2, by=0.05),</span></span>
+<span id="cb24-88"><a href="#cb24-88" aria-hidden="true" tabindex="-1"></a><span class="in">                                          fif = 0.8,</span></span>
+<span id="cb24-89"><a href="#cb24-89" aria-hidden="true" tabindex="-1"></a><span class="in">                                          m=c(0,1),</span></span>
+<span id="cb24-90"><a href="#cb24-90" aria-hidden="true" tabindex="-1"></a><span class="in">                                          xpH=c(0,1))</span></span>
+<span id="cb24-91"><a href="#cb24-91" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-92"><a href="#cb24-92" aria-hidden="true" tabindex="-1"></a><span class="in">hplcparam_candidates_df_90&lt;-hplcparam_candidates_df_270%&gt;%</span></span>
+<span id="cb24-93"><a href="#cb24-93" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(tg=tg/3)</span></span>
 <span id="cb24-94"><a href="#cb24-94" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-95"><a href="#cb24-95" aria-hidden="true" tabindex="-1"></a><span class="in">pNB = as.data.frame(priorsNB)%&gt;%</span></span>
-<span id="cb24-96"><a href="#cb24-96" aria-hidden="true" tabindex="-1"></a><span class="in">   mutate(parameter=c("logkwN","S1N","dS1","dlogkwB","dS1B","ddS1B"), .before = p)%&gt;%</span></span>
-<span id="cb24-97"><a href="#cb24-97" aria-hidden="true" tabindex="-1"></a><span class="in">  select(-p, -msigma_sqaure, -starts_with("S_inv")) %&gt;%</span></span>
-<span id="cb24-98"><a href="#cb24-98" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(group = "Bases")</span></span>
+<span id="cb24-95"><a href="#cb24-95" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-96"><a href="#cb24-96" aria-hidden="true" tabindex="-1"></a><span class="in">hplcparam_candidates_df_30&lt;-hplcparam_candidates_df_270%&gt;%</span></span>
+<span id="cb24-97"><a href="#cb24-97" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(tg=tg/3/3)</span></span>
+<span id="cb24-98"><a href="#cb24-98" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb24-99"><a href="#cb24-99" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-100"><a href="#cb24-100" aria-hidden="true" tabindex="-1"></a><span class="in">rbind(pNA, pNB)%&gt;%</span></span>
-<span id="cb24-101"><a href="#cb24-101" aria-hidden="true" tabindex="-1"></a><span class="in">  as_grouped_data(groups = "group") %&gt;%</span></span>
-<span id="cb24-102"><a href="#cb24-102" aria-hidden="true" tabindex="-1"></a><span class="in">  flextable() %&gt;%</span></span>
-<span id="cb24-103"><a href="#cb24-103" aria-hidden="true" tabindex="-1"></a><span class="in">  colformat_double(digits = 2, na_str = " ")</span></span>
-<span id="cb24-104"><a href="#cb24-104" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-105"><a href="#cb24-105" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb24-106"><a href="#cb24-106" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-107"><a href="#cb24-107" aria-hidden="true" tabindex="-1"></a>Here I consider a design space that consist of linear organic modifier gradients ranging from 10 to 270 min and organic modifier content ranging from 0.05 to 0.2 for MeOH and ACN. The tg is decreased by a factor of 3 and 9.</span>
-<span id="cb24-108"><a href="#cb24-108" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-109"><a href="#cb24-109" aria-hidden="true" tabindex="-1"></a><span class="in">```{r design-space}</span></span>
-<span id="cb24-110"><a href="#cb24-110" aria-hidden="true" tabindex="-1"></a><span class="in">hplcparam_candidates_df_270 = expand_grid(tg=seq(10,270,by=10), </span></span>
-<span id="cb24-111"><a href="#cb24-111" aria-hidden="true" tabindex="-1"></a><span class="in">                                          td=2.1, </span></span>
-<span id="cb24-112"><a href="#cb24-112" aria-hidden="true" tabindex="-1"></a><span class="in">                                          to=0.532,</span></span>
-<span id="cb24-113"><a href="#cb24-113" aria-hidden="true" tabindex="-1"></a><span class="in">                                          te=0.04, </span></span>
-<span id="cb24-114"><a href="#cb24-114" aria-hidden="true" tabindex="-1"></a><span class="in">                                          fio = seq(0.05, 0.2, by=0.05),</span></span>
-<span id="cb24-115"><a href="#cb24-115" aria-hidden="true" tabindex="-1"></a><span class="in">                                          fif = 0.8,</span></span>
-<span id="cb24-116"><a href="#cb24-116" aria-hidden="true" tabindex="-1"></a><span class="in">                                          m=c(0,1),</span></span>
-<span id="cb24-117"><a href="#cb24-117" aria-hidden="true" tabindex="-1"></a><span class="in">                                          xpH=c(0,1))</span></span>
-<span id="cb24-118"><a href="#cb24-118" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-119"><a href="#cb24-119" aria-hidden="true" tabindex="-1"></a><span class="in">hplcparam_candidates_df_90&lt;-hplcparam_candidates_df_270%&gt;%</span></span>
-<span id="cb24-120"><a href="#cb24-120" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(tg=tg/3)</span></span>
-<span id="cb24-121"><a href="#cb24-121" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-122"><a href="#cb24-122" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-123"><a href="#cb24-123" aria-hidden="true" tabindex="-1"></a><span class="in">hplcparam_candidates_df_30&lt;-hplcparam_candidates_df_270%&gt;%</span></span>
-<span id="cb24-124"><a href="#cb24-124" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(tg=tg/3/3)</span></span>
-<span id="cb24-125"><a href="#cb24-125" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb24-126"><a href="#cb24-126" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-127"><a href="#cb24-127" aria-hidden="true" tabindex="-1"></a><span class="fu"># Read the results</span></span>
-<span id="cb24-128"><a href="#cb24-128" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-129"><a href="#cb24-129" aria-hidden="true" tabindex="-1"></a><span class="fu"># Stan multiple analytes. Single form analytes. fi and tg for MeOH and ACN as design variables</span></span>
-<span id="cb24-130"><a href="#cb24-130" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-131"><a href="#cb24-131" aria-hidden="true" tabindex="-1"></a><span class="fu">## Compile stan models</span></span>
-<span id="cb24-132"><a href="#cb24-132" aria-hidden="true" tabindex="-1"></a><span class="in">```{r single-form-analytes-compilation}</span></span>
-<span id="cb24-133"><a href="#cb24-133" aria-hidden="true" tabindex="-1"></a><span class="in">mod_analytes_gq= cmdstan_model("../stan/hplc-gra-single-form-analytes-gq.stan", stanc_options = list("O1"))</span></span>
-<span id="cb24-134"><a href="#cb24-134" aria-hidden="true" tabindex="-1"></a><span class="in">mod_analytes_sim = cmdstan_model("../stan/hplc-gra-single-form-analytes-sim.stan", stanc_options = list("O1"))</span></span>
-<span id="cb24-135"><a href="#cb24-135" aria-hidden="true" tabindex="-1"></a><span class="in">mod_analytes = cmdstan_model("../stan/hplc-gra-single-form-analytes.stan", stanc_options = list("O1"))</span></span>
-<span id="cb24-136"><a href="#cb24-136" aria-hidden="true" tabindex="-1"></a><span class="in">mod_analytes$compile(compile_model_methods=TRUE,force_recompile=TRUE)</span></span>
-<span id="cb24-137"><a href="#cb24-137" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb24-138"><a href="#cb24-138" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-139"><a href="#cb24-139" aria-hidden="true" tabindex="-1"></a><span class="fu">## Simulate retention times and create datasets</span></span>
-<span id="cb24-140"><a href="#cb24-140" aria-hidden="true" tabindex="-1"></a><span class="fu">### maxtg=270</span></span>
-<span id="cb24-141"><a href="#cb24-141" aria-hidden="true" tabindex="-1"></a><span class="in">```{r single-form-analytes-simulations-1}</span></span>
-<span id="cb24-142"><a href="#cb24-142" aria-hidden="true" tabindex="-1"></a><span class="in">data_ma=hplcparam_candidates_df_270%&gt;%filter(xpH==0)</span></span>
-<span id="cb24-143"><a href="#cb24-143" aria-hidden="true" tabindex="-1"></a><span class="in">nObs = nrow(data_ma);</span></span>
-<span id="cb24-144"><a href="#cb24-144" aria-hidden="true" tabindex="-1"></a><span class="in">nAnalytes =50;</span></span>
-<span id="cb24-145"><a href="#cb24-145" aria-hidden="true" tabindex="-1"></a><span class="in">cseed = 1234;</span></span>
-<span id="cb24-146"><a href="#cb24-146" aria-hidden="true" tabindex="-1"></a><span class="in">n_param = 3;</span></span>
-<span id="cb24-147"><a href="#cb24-147" aria-hidden="true" tabindex="-1"></a><span class="in">n_rep = 10;</span></span>
-<span id="cb24-148"><a href="#cb24-148" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-149"><a href="#cb24-149" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_noprior_ma=list()</span></span>
-<span id="cb24-150"><a href="#cb24-150" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma=list()</span></span>
-<span id="cb24-151"><a href="#cb24-151" aria-hidden="true" tabindex="-1"></a><span class="in">inits = list()</span></span>
-<span id="cb24-152"><a href="#cb24-152" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-153"><a href="#cb24-153" aria-hidden="true" tabindex="-1"></a><span class="in">for (i in 1:n_rep) {</span></span>
-<span id="cb24-154"><a href="#cb24-154" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]] = list(nObs=nObs,</span></span>
-<span id="cb24-155"><a href="#cb24-155" aria-hidden="true" tabindex="-1"></a><span class="in">                   nAnalytes=nAnalytes,</span></span>
-<span id="cb24-156"><a href="#cb24-156" aria-hidden="true" tabindex="-1"></a><span class="in">                   steps = 4 + 6*data_ma$m,</span></span>
-<span id="cb24-157"><a href="#cb24-157" aria-hidden="true" tabindex="-1"></a><span class="in">                   hplcparam=as.matrix(data_ma%&gt;%dplyr::select(c(tg,td,to,te,fio,fif,m))),</span></span>
-<span id="cb24-158"><a href="#cb24-158" aria-hidden="true" tabindex="-1"></a><span class="in">                   include_prior = 1,</span></span>
-<span id="cb24-159"><a href="#cb24-159" aria-hidden="true" tabindex="-1"></a><span class="in">                   run_estimation=1,</span></span>
-<span id="cb24-160"><a href="#cb24-160" aria-hidden="true" tabindex="-1"></a><span class="in">                   nSel = nObs,</span></span>
-<span id="cb24-161"><a href="#cb24-161" aria-hidden="true" tabindex="-1"></a><span class="in">                   selected = 1:nObs)</span></span>
-<span id="cb24-162"><a href="#cb24-162" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-163"><a href="#cb24-163" aria-hidden="true" tabindex="-1"></a><span class="in">fit_gq  = mod_analytes_gq$sample(data = datastruct_prior_ma[[i]],</span></span>
-<span id="cb24-164"><a href="#cb24-164" aria-hidden="true" tabindex="-1"></a><span class="in">                                         seed = cseed,</span></span>
-<span id="cb24-165"><a href="#cb24-165" aria-hidden="true" tabindex="-1"></a><span class="in">                                         fixed_param = TRUE,</span></span>
-<span id="cb24-166"><a href="#cb24-166" aria-hidden="true" tabindex="-1"></a><span class="in">                                         chains = 1,</span></span>
-<span id="cb24-167"><a href="#cb24-167" aria-hidden="true" tabindex="-1"></a><span class="in">                                         iter_sampling=1)</span></span>
-<span id="cb24-168"><a href="#cb24-168" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-169"><a href="#cb24-169" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]]$trobs = matrix(fit_gq$draws(format = "matrix", variable = "y_hat_sim"),nAnalytes,nObs)</span></span>
-<span id="cb24-170"><a href="#cb24-170" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]]$logPobs = fit_gq$draws(format = "matrix", variable = "logPobs")[1:nAnalytes]</span></span>
-<span id="cb24-171"><a href="#cb24-171" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]]$N1A2B3 = fit_gq$draws(format = "matrix", variable = "N1A2B3")[1:nAnalytes]</span></span>
-<span id="cb24-172"><a href="#cb24-172" aria-hidden="true" tabindex="-1"></a><span class="in">param = matrix(fit_gq$draws(format = "matrix", variable = "paramsim"),nAnalytes,3)</span></span>
-<span id="cb24-173"><a href="#cb24-173" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-100"><a href="#cb24-100" aria-hidden="true" tabindex="-1"></a><span class="fu"># Read the results</span></span>
+<span id="cb24-101"><a href="#cb24-101" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-102"><a href="#cb24-102" aria-hidden="true" tabindex="-1"></a><span class="fu"># Stan multiple analytes. Single form analytes. fi and tg for MeOH and ACN as design variables</span></span>
+<span id="cb24-103"><a href="#cb24-103" aria-hidden="true" tabindex="-1"></a><span class="fu">## Compile stan models</span></span>
+<span id="cb24-104"><a href="#cb24-104" aria-hidden="true" tabindex="-1"></a><span class="in">```{r single-form-analytes-compilation}</span></span>
+<span id="cb24-105"><a href="#cb24-105" aria-hidden="true" tabindex="-1"></a><span class="in">mod_analytes_gq= cmdstan_model("../stan/hplc-gra-single-form-analytes-gq.stan", stanc_options = list("O1"))</span></span>
+<span id="cb24-106"><a href="#cb24-106" aria-hidden="true" tabindex="-1"></a><span class="in">mod_analytes_sim = cmdstan_model("../stan/hplc-gra-single-form-analytes-sim.stan", stanc_options = list("O1"))</span></span>
+<span id="cb24-107"><a href="#cb24-107" aria-hidden="true" tabindex="-1"></a><span class="in">mod_analytes = cmdstan_model("../stan/hplc-gra-single-form-analytes.stan", stanc_options = list("O1"))</span></span>
+<span id="cb24-108"><a href="#cb24-108" aria-hidden="true" tabindex="-1"></a><span class="in">mod_analytes$compile(compile_model_methods=TRUE,force_recompile=TRUE)</span></span>
+<span id="cb24-109"><a href="#cb24-109" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb24-110"><a href="#cb24-110" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-111"><a href="#cb24-111" aria-hidden="true" tabindex="-1"></a><span class="fu">## Simulate retention times and create datasets</span></span>
+<span id="cb24-112"><a href="#cb24-112" aria-hidden="true" tabindex="-1"></a><span class="fu">### maxtg=270</span></span>
+<span id="cb24-113"><a href="#cb24-113" aria-hidden="true" tabindex="-1"></a><span class="in">```{r single-form-analytes-simulations-1}</span></span>
+<span id="cb24-114"><a href="#cb24-114" aria-hidden="true" tabindex="-1"></a><span class="in">data_ma=hplcparam_candidates_df_270%&gt;%filter(xpH==0)</span></span>
+<span id="cb24-115"><a href="#cb24-115" aria-hidden="true" tabindex="-1"></a><span class="in">nObs = nrow(data_ma);</span></span>
+<span id="cb24-116"><a href="#cb24-116" aria-hidden="true" tabindex="-1"></a><span class="in">nAnalytes =50;</span></span>
+<span id="cb24-117"><a href="#cb24-117" aria-hidden="true" tabindex="-1"></a><span class="in">cseed = 1234;</span></span>
+<span id="cb24-118"><a href="#cb24-118" aria-hidden="true" tabindex="-1"></a><span class="in">n_param = 3;</span></span>
+<span id="cb24-119"><a href="#cb24-119" aria-hidden="true" tabindex="-1"></a><span class="in">n_rep = 10;</span></span>
+<span id="cb24-120"><a href="#cb24-120" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-121"><a href="#cb24-121" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_noprior_ma=list()</span></span>
+<span id="cb24-122"><a href="#cb24-122" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma=list()</span></span>
+<span id="cb24-123"><a href="#cb24-123" aria-hidden="true" tabindex="-1"></a><span class="in">inits = list()</span></span>
+<span id="cb24-124"><a href="#cb24-124" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-125"><a href="#cb24-125" aria-hidden="true" tabindex="-1"></a><span class="in">for (i in 1:n_rep) {</span></span>
+<span id="cb24-126"><a href="#cb24-126" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]] = list(nObs=nObs,</span></span>
+<span id="cb24-127"><a href="#cb24-127" aria-hidden="true" tabindex="-1"></a><span class="in">                   nAnalytes=nAnalytes,</span></span>
+<span id="cb24-128"><a href="#cb24-128" aria-hidden="true" tabindex="-1"></a><span class="in">                   steps = 4 + 6*data_ma$m,</span></span>
+<span id="cb24-129"><a href="#cb24-129" aria-hidden="true" tabindex="-1"></a><span class="in">                   hplcparam=as.matrix(data_ma%&gt;%dplyr::select(c(tg,td,to,te,fio,fif,m))),</span></span>
+<span id="cb24-130"><a href="#cb24-130" aria-hidden="true" tabindex="-1"></a><span class="in">                   include_prior = 1,</span></span>
+<span id="cb24-131"><a href="#cb24-131" aria-hidden="true" tabindex="-1"></a><span class="in">                   run_estimation=1,</span></span>
+<span id="cb24-132"><a href="#cb24-132" aria-hidden="true" tabindex="-1"></a><span class="in">                   nSel = nObs,</span></span>
+<span id="cb24-133"><a href="#cb24-133" aria-hidden="true" tabindex="-1"></a><span class="in">                   selected = 1:nObs)</span></span>
+<span id="cb24-134"><a href="#cb24-134" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-135"><a href="#cb24-135" aria-hidden="true" tabindex="-1"></a><span class="in">fit_gq  = mod_analytes_gq$sample(data = datastruct_prior_ma[[i]],</span></span>
+<span id="cb24-136"><a href="#cb24-136" aria-hidden="true" tabindex="-1"></a><span class="in">                                         seed = cseed,</span></span>
+<span id="cb24-137"><a href="#cb24-137" aria-hidden="true" tabindex="-1"></a><span class="in">                                         fixed_param = TRUE,</span></span>
+<span id="cb24-138"><a href="#cb24-138" aria-hidden="true" tabindex="-1"></a><span class="in">                                         chains = 1,</span></span>
+<span id="cb24-139"><a href="#cb24-139" aria-hidden="true" tabindex="-1"></a><span class="in">                                         iter_sampling=1)</span></span>
+<span id="cb24-140"><a href="#cb24-140" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-141"><a href="#cb24-141" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]]$trobs = matrix(fit_gq$draws(format = "matrix", variable = "y_hat_sim"),nAnalytes,nObs)</span></span>
+<span id="cb24-142"><a href="#cb24-142" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]]$logPobs = fit_gq$draws(format = "matrix", variable = "logPobs")[1:nAnalytes]</span></span>
+<span id="cb24-143"><a href="#cb24-143" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]]$N1A2B3 = fit_gq$draws(format = "matrix", variable = "N1A2B3")[1:nAnalytes]</span></span>
+<span id="cb24-144"><a href="#cb24-144" aria-hidden="true" tabindex="-1"></a><span class="in">param = matrix(fit_gq$draws(format = "matrix", variable = "paramsim"),nAnalytes,3)</span></span>
+<span id="cb24-145"><a href="#cb24-145" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-146"><a href="#cb24-146" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-147"><a href="#cb24-147" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_noprior_ma[[i]]=datastruct_prior_ma[[i]];</span></span>
+<span id="cb24-148"><a href="#cb24-148" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_noprior_ma[[i]]$include_prior = 0.01;</span></span>
+<span id="cb24-149"><a href="#cb24-149" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-150"><a href="#cb24-150" aria-hidden="true" tabindex="-1"></a><span class="in">inits[[i]]=param</span></span>
+<span id="cb24-151"><a href="#cb24-151" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-152"><a href="#cb24-152" aria-hidden="true" tabindex="-1"></a><span class="in">cseed = cseed+1</span></span>
+<span id="cb24-153"><a href="#cb24-153" aria-hidden="true" tabindex="-1"></a><span class="in">}</span></span>
+<span id="cb24-154"><a href="#cb24-154" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-155"><a href="#cb24-155" aria-hidden="true" tabindex="-1"></a><span class="in">logP1 = unlist(purrr::map(1:length(datastruct_noprior_ma),\(i) datastruct_noprior_ma[[i]]$logPobs))</span></span>
+<span id="cb24-156"><a href="#cb24-156" aria-hidden="true" tabindex="-1"></a><span class="in">NAB1 = unlist(purrr::map(1:length(datastruct_noprior_ma),\(i) datastruct_noprior_ma[[i]]$N1A2B3))</span></span>
+<span id="cb24-157"><a href="#cb24-157" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-158"><a href="#cb24-158" aria-hidden="true" tabindex="-1"></a><span class="in">inits_1 = inits</span></span>
+<span id="cb24-159"><a href="#cb24-159" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma_1 = datastruct_prior_ma</span></span>
+<span id="cb24-160"><a href="#cb24-160" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_noprior_ma_1 = datastruct_noprior_ma</span></span>
+<span id="cb24-161"><a href="#cb24-161" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb24-162"><a href="#cb24-162" aria-hidden="true" tabindex="-1"></a><span class="fu">### maxtg=90</span></span>
+<span id="cb24-163"><a href="#cb24-163" aria-hidden="true" tabindex="-1"></a><span class="in">```{r single-form-analytes-simulations-2}</span></span>
+<span id="cb24-164"><a href="#cb24-164" aria-hidden="true" tabindex="-1"></a><span class="in">data_ma=hplcparam_candidates_df_90%&gt;%filter(xpH==0)</span></span>
+<span id="cb24-165"><a href="#cb24-165" aria-hidden="true" tabindex="-1"></a><span class="in">nObs = nrow(data_ma);</span></span>
+<span id="cb24-166"><a href="#cb24-166" aria-hidden="true" tabindex="-1"></a><span class="in">nAnalytes =50;</span></span>
+<span id="cb24-167"><a href="#cb24-167" aria-hidden="true" tabindex="-1"></a><span class="in">cseed = 1234;</span></span>
+<span id="cb24-168"><a href="#cb24-168" aria-hidden="true" tabindex="-1"></a><span class="in">n_param = 3;</span></span>
+<span id="cb24-169"><a href="#cb24-169" aria-hidden="true" tabindex="-1"></a><span class="in">n_rep = 10;</span></span>
+<span id="cb24-170"><a href="#cb24-170" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-171"><a href="#cb24-171" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_noprior_ma=list()</span></span>
+<span id="cb24-172"><a href="#cb24-172" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma=list()</span></span>
+<span id="cb24-173"><a href="#cb24-173" aria-hidden="true" tabindex="-1"></a><span class="in">inits = list()</span></span>
 <span id="cb24-174"><a href="#cb24-174" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-175"><a href="#cb24-175" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_noprior_ma[[i]]=datastruct_prior_ma[[i]];</span></span>
-<span id="cb24-176"><a href="#cb24-176" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_noprior_ma[[i]]$include_prior = 0.01;</span></span>
-<span id="cb24-177"><a href="#cb24-177" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-178"><a href="#cb24-178" aria-hidden="true" tabindex="-1"></a><span class="in">inits[[i]]=param</span></span>
-<span id="cb24-179"><a href="#cb24-179" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-180"><a href="#cb24-180" aria-hidden="true" tabindex="-1"></a><span class="in">cseed = cseed+1</span></span>
-<span id="cb24-181"><a href="#cb24-181" aria-hidden="true" tabindex="-1"></a><span class="in">}</span></span>
-<span id="cb24-182"><a href="#cb24-182" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-183"><a href="#cb24-183" aria-hidden="true" tabindex="-1"></a><span class="in">logP1 = unlist(purrr::map(1:length(datastruct_noprior_ma),\(i) datastruct_noprior_ma[[i]]$logPobs))</span></span>
-<span id="cb24-184"><a href="#cb24-184" aria-hidden="true" tabindex="-1"></a><span class="in">NAB1 = unlist(purrr::map(1:length(datastruct_noprior_ma),\(i) datastruct_noprior_ma[[i]]$N1A2B3))</span></span>
-<span id="cb24-185"><a href="#cb24-185" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-186"><a href="#cb24-186" aria-hidden="true" tabindex="-1"></a><span class="in">inits_1 = inits</span></span>
-<span id="cb24-187"><a href="#cb24-187" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma_1 = datastruct_prior_ma</span></span>
-<span id="cb24-188"><a href="#cb24-188" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_noprior_ma_1 = datastruct_noprior_ma</span></span>
-<span id="cb24-189"><a href="#cb24-189" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb24-190"><a href="#cb24-190" aria-hidden="true" tabindex="-1"></a><span class="fu">### maxtg=90</span></span>
-<span id="cb24-191"><a href="#cb24-191" aria-hidden="true" tabindex="-1"></a><span class="in">```{r single-form-analytes-simulations-2}</span></span>
-<span id="cb24-192"><a href="#cb24-192" aria-hidden="true" tabindex="-1"></a><span class="in">data_ma=hplcparam_candidates_df_90%&gt;%filter(xpH==0)</span></span>
-<span id="cb24-193"><a href="#cb24-193" aria-hidden="true" tabindex="-1"></a><span class="in">nObs = nrow(data_ma);</span></span>
-<span id="cb24-194"><a href="#cb24-194" aria-hidden="true" tabindex="-1"></a><span class="in">nAnalytes =50;</span></span>
-<span id="cb24-195"><a href="#cb24-195" aria-hidden="true" tabindex="-1"></a><span class="in">cseed = 1234;</span></span>
-<span id="cb24-196"><a href="#cb24-196" aria-hidden="true" tabindex="-1"></a><span class="in">n_param = 3;</span></span>
-<span id="cb24-197"><a href="#cb24-197" aria-hidden="true" tabindex="-1"></a><span class="in">n_rep = 10;</span></span>
-<span id="cb24-198"><a href="#cb24-198" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-199"><a href="#cb24-199" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_noprior_ma=list()</span></span>
-<span id="cb24-200"><a href="#cb24-200" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma=list()</span></span>
-<span id="cb24-201"><a href="#cb24-201" aria-hidden="true" tabindex="-1"></a><span class="in">inits = list()</span></span>
-<span id="cb24-202"><a href="#cb24-202" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-203"><a href="#cb24-203" aria-hidden="true" tabindex="-1"></a><span class="in">for (i in 1:n_rep) {</span></span>
-<span id="cb24-204"><a href="#cb24-204" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]] = list(nObs=nObs,</span></span>
-<span id="cb24-205"><a href="#cb24-205" aria-hidden="true" tabindex="-1"></a><span class="in">                   nAnalytes=nAnalytes,</span></span>
-<span id="cb24-206"><a href="#cb24-206" aria-hidden="true" tabindex="-1"></a><span class="in">                   steps = 4 + 6*data_ma$m,</span></span>
-<span id="cb24-207"><a href="#cb24-207" aria-hidden="true" tabindex="-1"></a><span class="in">                   hplcparam=as.matrix(data_ma%&gt;%dplyr::select(c(tg,td,to,te,fio,fif,m))),</span></span>
-<span id="cb24-208"><a href="#cb24-208" aria-hidden="true" tabindex="-1"></a><span class="in">                   include_prior = 1,</span></span>
-<span id="cb24-209"><a href="#cb24-209" aria-hidden="true" tabindex="-1"></a><span class="in">                   run_estimation=1,</span></span>
-<span id="cb24-210"><a href="#cb24-210" aria-hidden="true" tabindex="-1"></a><span class="in">                   nSel = nObs,</span></span>
-<span id="cb24-211"><a href="#cb24-211" aria-hidden="true" tabindex="-1"></a><span class="in">                   selected = 1:nObs)</span></span>
-<span id="cb24-212"><a href="#cb24-212" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-213"><a href="#cb24-213" aria-hidden="true" tabindex="-1"></a><span class="in">fit_gq  = mod_analytes_gq$sample(data = datastruct_prior_ma[[i]],</span></span>
-<span id="cb24-214"><a href="#cb24-214" aria-hidden="true" tabindex="-1"></a><span class="in">                                         seed = cseed,</span></span>
-<span id="cb24-215"><a href="#cb24-215" aria-hidden="true" tabindex="-1"></a><span class="in">                                         fixed_param = TRUE,</span></span>
-<span id="cb24-216"><a href="#cb24-216" aria-hidden="true" tabindex="-1"></a><span class="in">                                         chains = 1,</span></span>
-<span id="cb24-217"><a href="#cb24-217" aria-hidden="true" tabindex="-1"></a><span class="in">                                         iter_sampling=1)</span></span>
-<span id="cb24-218"><a href="#cb24-218" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-219"><a href="#cb24-219" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]]$trobs = matrix(fit_gq$draws(format = "matrix", variable = "y_hat_sim"),nAnalytes,nObs)</span></span>
-<span id="cb24-220"><a href="#cb24-220" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]]$logPobs = fit_gq$draws(format = "matrix", variable = "logPobs")[1:nAnalytes]</span></span>
-<span id="cb24-221"><a href="#cb24-221" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]]$N1A2B3 = fit_gq$draws(format = "matrix", variable = "N1A2B3")[1:nAnalytes]</span></span>
-<span id="cb24-222"><a href="#cb24-222" aria-hidden="true" tabindex="-1"></a><span class="in">param = matrix(fit_gq$draws(format = "matrix", variable = "paramsim"),nAnalytes,3)</span></span>
-<span id="cb24-223"><a href="#cb24-223" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-175"><a href="#cb24-175" aria-hidden="true" tabindex="-1"></a><span class="in">for (i in 1:n_rep) {</span></span>
+<span id="cb24-176"><a href="#cb24-176" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]] = list(nObs=nObs,</span></span>
+<span id="cb24-177"><a href="#cb24-177" aria-hidden="true" tabindex="-1"></a><span class="in">                   nAnalytes=nAnalytes,</span></span>
+<span id="cb24-178"><a href="#cb24-178" aria-hidden="true" tabindex="-1"></a><span class="in">                   steps = 4 + 6*data_ma$m,</span></span>
+<span id="cb24-179"><a href="#cb24-179" aria-hidden="true" tabindex="-1"></a><span class="in">                   hplcparam=as.matrix(data_ma%&gt;%dplyr::select(c(tg,td,to,te,fio,fif,m))),</span></span>
+<span id="cb24-180"><a href="#cb24-180" aria-hidden="true" tabindex="-1"></a><span class="in">                   include_prior = 1,</span></span>
+<span id="cb24-181"><a href="#cb24-181" aria-hidden="true" tabindex="-1"></a><span class="in">                   run_estimation=1,</span></span>
+<span id="cb24-182"><a href="#cb24-182" aria-hidden="true" tabindex="-1"></a><span class="in">                   nSel = nObs,</span></span>
+<span id="cb24-183"><a href="#cb24-183" aria-hidden="true" tabindex="-1"></a><span class="in">                   selected = 1:nObs)</span></span>
+<span id="cb24-184"><a href="#cb24-184" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-185"><a href="#cb24-185" aria-hidden="true" tabindex="-1"></a><span class="in">fit_gq  = mod_analytes_gq$sample(data = datastruct_prior_ma[[i]],</span></span>
+<span id="cb24-186"><a href="#cb24-186" aria-hidden="true" tabindex="-1"></a><span class="in">                                         seed = cseed,</span></span>
+<span id="cb24-187"><a href="#cb24-187" aria-hidden="true" tabindex="-1"></a><span class="in">                                         fixed_param = TRUE,</span></span>
+<span id="cb24-188"><a href="#cb24-188" aria-hidden="true" tabindex="-1"></a><span class="in">                                         chains = 1,</span></span>
+<span id="cb24-189"><a href="#cb24-189" aria-hidden="true" tabindex="-1"></a><span class="in">                                         iter_sampling=1)</span></span>
+<span id="cb24-190"><a href="#cb24-190" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-191"><a href="#cb24-191" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]]$trobs = matrix(fit_gq$draws(format = "matrix", variable = "y_hat_sim"),nAnalytes,nObs)</span></span>
+<span id="cb24-192"><a href="#cb24-192" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]]$logPobs = fit_gq$draws(format = "matrix", variable = "logPobs")[1:nAnalytes]</span></span>
+<span id="cb24-193"><a href="#cb24-193" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]]$N1A2B3 = fit_gq$draws(format = "matrix", variable = "N1A2B3")[1:nAnalytes]</span></span>
+<span id="cb24-194"><a href="#cb24-194" aria-hidden="true" tabindex="-1"></a><span class="in">param = matrix(fit_gq$draws(format = "matrix", variable = "paramsim"),nAnalytes,3)</span></span>
+<span id="cb24-195"><a href="#cb24-195" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-196"><a href="#cb24-196" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-197"><a href="#cb24-197" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_noprior_ma[[i]]=datastruct_prior_ma[[i]];</span></span>
+<span id="cb24-198"><a href="#cb24-198" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_noprior_ma[[i]]$include_prior = 0.01;</span></span>
+<span id="cb24-199"><a href="#cb24-199" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-200"><a href="#cb24-200" aria-hidden="true" tabindex="-1"></a><span class="in">inits[[i]]=param</span></span>
+<span id="cb24-201"><a href="#cb24-201" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-202"><a href="#cb24-202" aria-hidden="true" tabindex="-1"></a><span class="in">cseed = cseed+1</span></span>
+<span id="cb24-203"><a href="#cb24-203" aria-hidden="true" tabindex="-1"></a><span class="in">}</span></span>
+<span id="cb24-204"><a href="#cb24-204" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-205"><a href="#cb24-205" aria-hidden="true" tabindex="-1"></a><span class="in">logP2 = unlist(purrr::map(1:length(datastruct_noprior_ma),\(i) datastruct_noprior_ma[[i]]$logPobs))</span></span>
+<span id="cb24-206"><a href="#cb24-206" aria-hidden="true" tabindex="-1"></a><span class="in">NAB2 = unlist(purrr::map(1:length(datastruct_noprior_ma),\(i) datastruct_noprior_ma[[i]]$N1A2B3))</span></span>
+<span id="cb24-207"><a href="#cb24-207" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-208"><a href="#cb24-208" aria-hidden="true" tabindex="-1"></a><span class="in">inits_2 = inits</span></span>
+<span id="cb24-209"><a href="#cb24-209" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma_2 = datastruct_prior_ma</span></span>
+<span id="cb24-210"><a href="#cb24-210" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_noprior_ma_2 = datastruct_noprior_ma</span></span>
+<span id="cb24-211"><a href="#cb24-211" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb24-212"><a href="#cb24-212" aria-hidden="true" tabindex="-1"></a><span class="fu">### maxtg=30</span></span>
+<span id="cb24-213"><a href="#cb24-213" aria-hidden="true" tabindex="-1"></a><span class="in">```{r single-form-analytes-simulations-3}</span></span>
+<span id="cb24-214"><a href="#cb24-214" aria-hidden="true" tabindex="-1"></a><span class="in">data_ma=hplcparam_candidates_df_30%&gt;%filter(xpH==0)</span></span>
+<span id="cb24-215"><a href="#cb24-215" aria-hidden="true" tabindex="-1"></a><span class="in">nObs = nrow(data_ma);</span></span>
+<span id="cb24-216"><a href="#cb24-216" aria-hidden="true" tabindex="-1"></a><span class="in">nAnalytes =50;</span></span>
+<span id="cb24-217"><a href="#cb24-217" aria-hidden="true" tabindex="-1"></a><span class="in">cseed = 1234;</span></span>
+<span id="cb24-218"><a href="#cb24-218" aria-hidden="true" tabindex="-1"></a><span class="in">n_param = 3;</span></span>
+<span id="cb24-219"><a href="#cb24-219" aria-hidden="true" tabindex="-1"></a><span class="in">n_rep = 10;</span></span>
+<span id="cb24-220"><a href="#cb24-220" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-221"><a href="#cb24-221" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_noprior_ma=list()</span></span>
+<span id="cb24-222"><a href="#cb24-222" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma=list()</span></span>
+<span id="cb24-223"><a href="#cb24-223" aria-hidden="true" tabindex="-1"></a><span class="in">inits = list()</span></span>
 <span id="cb24-224"><a href="#cb24-224" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-225"><a href="#cb24-225" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_noprior_ma[[i]]=datastruct_prior_ma[[i]];</span></span>
-<span id="cb24-226"><a href="#cb24-226" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_noprior_ma[[i]]$include_prior = 0.01;</span></span>
-<span id="cb24-227"><a href="#cb24-227" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-228"><a href="#cb24-228" aria-hidden="true" tabindex="-1"></a><span class="in">inits[[i]]=param</span></span>
-<span id="cb24-229"><a href="#cb24-229" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-230"><a href="#cb24-230" aria-hidden="true" tabindex="-1"></a><span class="in">cseed = cseed+1</span></span>
-<span id="cb24-231"><a href="#cb24-231" aria-hidden="true" tabindex="-1"></a><span class="in">}</span></span>
-<span id="cb24-232"><a href="#cb24-232" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-233"><a href="#cb24-233" aria-hidden="true" tabindex="-1"></a><span class="in">logP2 = unlist(purrr::map(1:length(datastruct_noprior_ma),\(i) datastruct_noprior_ma[[i]]$logPobs))</span></span>
-<span id="cb24-234"><a href="#cb24-234" aria-hidden="true" tabindex="-1"></a><span class="in">NAB2 = unlist(purrr::map(1:length(datastruct_noprior_ma),\(i) datastruct_noprior_ma[[i]]$N1A2B3))</span></span>
-<span id="cb24-235"><a href="#cb24-235" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-236"><a href="#cb24-236" aria-hidden="true" tabindex="-1"></a><span class="in">inits_2 = inits</span></span>
-<span id="cb24-237"><a href="#cb24-237" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma_2 = datastruct_prior_ma</span></span>
-<span id="cb24-238"><a href="#cb24-238" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_noprior_ma_2 = datastruct_noprior_ma</span></span>
-<span id="cb24-239"><a href="#cb24-239" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb24-240"><a href="#cb24-240" aria-hidden="true" tabindex="-1"></a><span class="fu">### maxtg=30</span></span>
-<span id="cb24-241"><a href="#cb24-241" aria-hidden="true" tabindex="-1"></a><span class="in">```{r single-form-analytes-simulations-3}</span></span>
-<span id="cb24-242"><a href="#cb24-242" aria-hidden="true" tabindex="-1"></a><span class="in">data_ma=hplcparam_candidates_df_30%&gt;%filter(xpH==0)</span></span>
-<span id="cb24-243"><a href="#cb24-243" aria-hidden="true" tabindex="-1"></a><span class="in">nObs = nrow(data_ma);</span></span>
-<span id="cb24-244"><a href="#cb24-244" aria-hidden="true" tabindex="-1"></a><span class="in">nAnalytes =50;</span></span>
-<span id="cb24-245"><a href="#cb24-245" aria-hidden="true" tabindex="-1"></a><span class="in">cseed = 1234;</span></span>
-<span id="cb24-246"><a href="#cb24-246" aria-hidden="true" tabindex="-1"></a><span class="in">n_param = 3;</span></span>
-<span id="cb24-247"><a href="#cb24-247" aria-hidden="true" tabindex="-1"></a><span class="in">n_rep = 10;</span></span>
-<span id="cb24-248"><a href="#cb24-248" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-249"><a href="#cb24-249" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_noprior_ma=list()</span></span>
-<span id="cb24-250"><a href="#cb24-250" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma=list()</span></span>
-<span id="cb24-251"><a href="#cb24-251" aria-hidden="true" tabindex="-1"></a><span class="in">inits = list()</span></span>
-<span id="cb24-252"><a href="#cb24-252" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-253"><a href="#cb24-253" aria-hidden="true" tabindex="-1"></a><span class="in">for (i in 1:n_rep) {</span></span>
-<span id="cb24-254"><a href="#cb24-254" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]] = list(nObs=nObs,</span></span>
-<span id="cb24-255"><a href="#cb24-255" aria-hidden="true" tabindex="-1"></a><span class="in">                   nAnalytes=nAnalytes,</span></span>
-<span id="cb24-256"><a href="#cb24-256" aria-hidden="true" tabindex="-1"></a><span class="in">                   steps = 4 + 6*data_ma$m,</span></span>
-<span id="cb24-257"><a href="#cb24-257" aria-hidden="true" tabindex="-1"></a><span class="in">                   hplcparam=as.matrix(data_ma%&gt;%dplyr::select(c(tg,td,to,te,fio,fif,m))),</span></span>
-<span id="cb24-258"><a href="#cb24-258" aria-hidden="true" tabindex="-1"></a><span class="in">                   include_prior = 1,</span></span>
-<span id="cb24-259"><a href="#cb24-259" aria-hidden="true" tabindex="-1"></a><span class="in">                   run_estimation=1,</span></span>
-<span id="cb24-260"><a href="#cb24-260" aria-hidden="true" tabindex="-1"></a><span class="in">                   nSel = nObs,</span></span>
-<span id="cb24-261"><a href="#cb24-261" aria-hidden="true" tabindex="-1"></a><span class="in">                   selected = 1:nObs)</span></span>
+<span id="cb24-225"><a href="#cb24-225" aria-hidden="true" tabindex="-1"></a><span class="in">for (i in 1:n_rep) {</span></span>
+<span id="cb24-226"><a href="#cb24-226" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]] = list(nObs=nObs,</span></span>
+<span id="cb24-227"><a href="#cb24-227" aria-hidden="true" tabindex="-1"></a><span class="in">                   nAnalytes=nAnalytes,</span></span>
+<span id="cb24-228"><a href="#cb24-228" aria-hidden="true" tabindex="-1"></a><span class="in">                   steps = 4 + 6*data_ma$m,</span></span>
+<span id="cb24-229"><a href="#cb24-229" aria-hidden="true" tabindex="-1"></a><span class="in">                   hplcparam=as.matrix(data_ma%&gt;%dplyr::select(c(tg,td,to,te,fio,fif,m))),</span></span>
+<span id="cb24-230"><a href="#cb24-230" aria-hidden="true" tabindex="-1"></a><span class="in">                   include_prior = 1,</span></span>
+<span id="cb24-231"><a href="#cb24-231" aria-hidden="true" tabindex="-1"></a><span class="in">                   run_estimation=1,</span></span>
+<span id="cb24-232"><a href="#cb24-232" aria-hidden="true" tabindex="-1"></a><span class="in">                   nSel = nObs,</span></span>
+<span id="cb24-233"><a href="#cb24-233" aria-hidden="true" tabindex="-1"></a><span class="in">                   selected = 1:nObs)</span></span>
+<span id="cb24-234"><a href="#cb24-234" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-235"><a href="#cb24-235" aria-hidden="true" tabindex="-1"></a><span class="in">fit_gq  = mod_analytes_gq$sample(data = datastruct_prior_ma[[i]],</span></span>
+<span id="cb24-236"><a href="#cb24-236" aria-hidden="true" tabindex="-1"></a><span class="in">                                         seed = cseed,</span></span>
+<span id="cb24-237"><a href="#cb24-237" aria-hidden="true" tabindex="-1"></a><span class="in">                                         fixed_param = TRUE,</span></span>
+<span id="cb24-238"><a href="#cb24-238" aria-hidden="true" tabindex="-1"></a><span class="in">                                         chains = 1,</span></span>
+<span id="cb24-239"><a href="#cb24-239" aria-hidden="true" tabindex="-1"></a><span class="in">                                         iter_sampling=1)</span></span>
+<span id="cb24-240"><a href="#cb24-240" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-241"><a href="#cb24-241" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]]$trobs = matrix(fit_gq$draws(format = "matrix", variable = "y_hat_sim"),nAnalytes,nObs)</span></span>
+<span id="cb24-242"><a href="#cb24-242" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]]$logPobs = fit_gq$draws(format = "matrix", variable = "logPobs")[1:nAnalytes]</span></span>
+<span id="cb24-243"><a href="#cb24-243" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]]$N1A2B3 = fit_gq$draws(format = "matrix", variable = "N1A2B3")[1:nAnalytes]</span></span>
+<span id="cb24-244"><a href="#cb24-244" aria-hidden="true" tabindex="-1"></a><span class="in">param = matrix(fit_gq$draws(format = "matrix", variable = "paramsim"),nAnalytes,3)</span></span>
+<span id="cb24-245"><a href="#cb24-245" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-246"><a href="#cb24-246" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-247"><a href="#cb24-247" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_noprior_ma[[i]]=datastruct_prior_ma[[i]];</span></span>
+<span id="cb24-248"><a href="#cb24-248" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_noprior_ma[[i]]$include_prior = 0.01;</span></span>
+<span id="cb24-249"><a href="#cb24-249" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-250"><a href="#cb24-250" aria-hidden="true" tabindex="-1"></a><span class="in">inits[[i]]=param</span></span>
+<span id="cb24-251"><a href="#cb24-251" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-252"><a href="#cb24-252" aria-hidden="true" tabindex="-1"></a><span class="in">cseed = cseed+1</span></span>
+<span id="cb24-253"><a href="#cb24-253" aria-hidden="true" tabindex="-1"></a><span class="in">}</span></span>
+<span id="cb24-254"><a href="#cb24-254" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-255"><a href="#cb24-255" aria-hidden="true" tabindex="-1"></a><span class="in">logP3 = unlist(purrr::map(1:length(datastruct_noprior_ma),\(i) datastruct_noprior_ma[[i]]$logPobs))</span></span>
+<span id="cb24-256"><a href="#cb24-256" aria-hidden="true" tabindex="-1"></a><span class="in">NAB3 = unlist(purrr::map(1:length(datastruct_noprior_ma),\(i) datastruct_noprior_ma[[i]]$N1A2B3))</span></span>
+<span id="cb24-257"><a href="#cb24-257" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-258"><a href="#cb24-258" aria-hidden="true" tabindex="-1"></a><span class="in">inits_3 = inits</span></span>
+<span id="cb24-259"><a href="#cb24-259" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma_3 = datastruct_prior_ma</span></span>
+<span id="cb24-260"><a href="#cb24-260" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_noprior_ma_3 = datastruct_noprior_ma</span></span>
+<span id="cb24-261"><a href="#cb24-261" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb24-262"><a href="#cb24-262" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-263"><a href="#cb24-263" aria-hidden="true" tabindex="-1"></a><span class="in">fit_gq  = mod_analytes_gq$sample(data = datastruct_prior_ma[[i]],</span></span>
-<span id="cb24-264"><a href="#cb24-264" aria-hidden="true" tabindex="-1"></a><span class="in">                                         seed = cseed,</span></span>
-<span id="cb24-265"><a href="#cb24-265" aria-hidden="true" tabindex="-1"></a><span class="in">                                         fixed_param = TRUE,</span></span>
-<span id="cb24-266"><a href="#cb24-266" aria-hidden="true" tabindex="-1"></a><span class="in">                                         chains = 1,</span></span>
-<span id="cb24-267"><a href="#cb24-267" aria-hidden="true" tabindex="-1"></a><span class="in">                                         iter_sampling=1)</span></span>
-<span id="cb24-268"><a href="#cb24-268" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-269"><a href="#cb24-269" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]]$trobs = matrix(fit_gq$draws(format = "matrix", variable = "y_hat_sim"),nAnalytes,nObs)</span></span>
-<span id="cb24-270"><a href="#cb24-270" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]]$logPobs = fit_gq$draws(format = "matrix", variable = "logPobs")[1:nAnalytes]</span></span>
-<span id="cb24-271"><a href="#cb24-271" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]]$N1A2B3 = fit_gq$draws(format = "matrix", variable = "N1A2B3")[1:nAnalytes]</span></span>
-<span id="cb24-272"><a href="#cb24-272" aria-hidden="true" tabindex="-1"></a><span class="in">param = matrix(fit_gq$draws(format = "matrix", variable = "paramsim"),nAnalytes,3)</span></span>
-<span id="cb24-273"><a href="#cb24-273" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-274"><a href="#cb24-274" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-275"><a href="#cb24-275" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_noprior_ma[[i]]=datastruct_prior_ma[[i]];</span></span>
-<span id="cb24-276"><a href="#cb24-276" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_noprior_ma[[i]]$include_prior = 0.01;</span></span>
-<span id="cb24-277"><a href="#cb24-277" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-278"><a href="#cb24-278" aria-hidden="true" tabindex="-1"></a><span class="in">inits[[i]]=param</span></span>
-<span id="cb24-279"><a href="#cb24-279" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-280"><a href="#cb24-280" aria-hidden="true" tabindex="-1"></a><span class="in">cseed = cseed+1</span></span>
-<span id="cb24-281"><a href="#cb24-281" aria-hidden="true" tabindex="-1"></a><span class="in">}</span></span>
-<span id="cb24-282"><a href="#cb24-282" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-283"><a href="#cb24-283" aria-hidden="true" tabindex="-1"></a><span class="in">logP3 = unlist(purrr::map(1:length(datastruct_noprior_ma),\(i) datastruct_noprior_ma[[i]]$logPobs))</span></span>
-<span id="cb24-284"><a href="#cb24-284" aria-hidden="true" tabindex="-1"></a><span class="in">NAB3 = unlist(purrr::map(1:length(datastruct_noprior_ma),\(i) datastruct_noprior_ma[[i]]$N1A2B3))</span></span>
+<span id="cb24-263"><a href="#cb24-263" aria-hidden="true" tabindex="-1"></a><span class="in">```{r fun}</span></span>
+<span id="cb24-264"><a href="#cb24-264" aria-hidden="true" tabindex="-1"></a><span class="in">mean_log_det_stan = function(data, init, chosen_indices, S){</span></span>
+<span id="cb24-265"><a href="#cb24-265" aria-hidden="true" tabindex="-1"></a><span class="in">  </span></span>
+<span id="cb24-266"><a href="#cb24-266" aria-hidden="true" tabindex="-1"></a><span class="in">init_ma = function(){list(param=init)}</span></span>
+<span id="cb24-267"><a href="#cb24-267" aria-hidden="true" tabindex="-1"></a><span class="in">data$selected = chosen_indices;</span></span>
+<span id="cb24-268"><a href="#cb24-268" aria-hidden="true" tabindex="-1"></a><span class="in">data$nSel = length(chosen_indices);</span></span>
+<span id="cb24-269"><a href="#cb24-269" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-270"><a href="#cb24-270" aria-hidden="true" tabindex="-1"></a><span class="in"> fit_opt  = mod_analytes$optimize(</span></span>
+<span id="cb24-271"><a href="#cb24-271" aria-hidden="true" tabindex="-1"></a><span class="in">   data = data,</span></span>
+<span id="cb24-272"><a href="#cb24-272" aria-hidden="true" tabindex="-1"></a><span class="in">   output_dir = here::here("stanfiles"),</span></span>
+<span id="cb24-273"><a href="#cb24-273" aria-hidden="true" tabindex="-1"></a><span class="in">   output_basename = S,</span></span>
+<span id="cb24-274"><a href="#cb24-274" aria-hidden="true" tabindex="-1"></a><span class="in">   seed = cseed,</span></span>
+<span id="cb24-275"><a href="#cb24-275" aria-hidden="true" tabindex="-1"></a><span class="in">   init = init_ma,</span></span>
+<span id="cb24-276"><a href="#cb24-276" aria-hidden="true" tabindex="-1"></a><span class="in">   jacobian = TRUE,</span></span>
+<span id="cb24-277"><a href="#cb24-277" aria-hidden="true" tabindex="-1"></a><span class="in">   show_messages = F)</span></span>
+<span id="cb24-278"><a href="#cb24-278" aria-hidden="true" tabindex="-1"></a><span class="in"> mode=fit_opt$unconstrain_variables(list(param = fit_opt$mle("param")))</span></span>
+<span id="cb24-279"><a href="#cb24-279" aria-hidden="true" tabindex="-1"></a><span class="in"> hessian = fit_opt$hessian(unconstrained_variables = mode)$hessian</span></span>
+<span id="cb24-280"><a href="#cb24-280" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-281"><a href="#cb24-281" aria-hidden="true" tabindex="-1"></a><span class="in">logdet = unlist(purrr::map(1:data$nAnalytes,\(i) log(det(-hessian[((i-1)*3+1):((i-1)*3+3),((i-1)*3+1):((i-1)*3+3)]))))</span></span>
+<span id="cb24-282"><a href="#cb24-282" aria-hidden="true" tabindex="-1"></a><span class="in">return(logdet)</span></span>
+<span id="cb24-283"><a href="#cb24-283" aria-hidden="true" tabindex="-1"></a><span class="in">}</span></span>
+<span id="cb24-284"><a href="#cb24-284" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb24-285"><a href="#cb24-285" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-286"><a href="#cb24-286" aria-hidden="true" tabindex="-1"></a><span class="in">inits_3 = inits</span></span>
-<span id="cb24-287"><a href="#cb24-287" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma_3 = datastruct_prior_ma</span></span>
-<span id="cb24-288"><a href="#cb24-288" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_noprior_ma_3 = datastruct_noprior_ma</span></span>
-<span id="cb24-289"><a href="#cb24-289" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb24-290"><a href="#cb24-290" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-291"><a href="#cb24-291" aria-hidden="true" tabindex="-1"></a><span class="in">```{r fun}</span></span>
-<span id="cb24-292"><a href="#cb24-292" aria-hidden="true" tabindex="-1"></a><span class="in">mean_log_det_stan = function(data, init, chosen_indices, S){</span></span>
-<span id="cb24-293"><a href="#cb24-293" aria-hidden="true" tabindex="-1"></a><span class="in">  </span></span>
-<span id="cb24-294"><a href="#cb24-294" aria-hidden="true" tabindex="-1"></a><span class="in">init_ma = function(){list(param=init)}</span></span>
-<span id="cb24-295"><a href="#cb24-295" aria-hidden="true" tabindex="-1"></a><span class="in">data$selected = chosen_indices;</span></span>
-<span id="cb24-296"><a href="#cb24-296" aria-hidden="true" tabindex="-1"></a><span class="in">data$nSel = length(chosen_indices);</span></span>
-<span id="cb24-297"><a href="#cb24-297" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-298"><a href="#cb24-298" aria-hidden="true" tabindex="-1"></a><span class="in"> fit_opt  = mod_analytes$optimize(</span></span>
-<span id="cb24-299"><a href="#cb24-299" aria-hidden="true" tabindex="-1"></a><span class="in">   data = data,</span></span>
-<span id="cb24-300"><a href="#cb24-300" aria-hidden="true" tabindex="-1"></a><span class="in">   output_dir = here::here("stanfiles"),</span></span>
-<span id="cb24-301"><a href="#cb24-301" aria-hidden="true" tabindex="-1"></a><span class="in">   output_basename = S,</span></span>
-<span id="cb24-302"><a href="#cb24-302" aria-hidden="true" tabindex="-1"></a><span class="in">   seed = cseed,</span></span>
-<span id="cb24-303"><a href="#cb24-303" aria-hidden="true" tabindex="-1"></a><span class="in">   init = init_ma,</span></span>
-<span id="cb24-304"><a href="#cb24-304" aria-hidden="true" tabindex="-1"></a><span class="in">   jacobian = TRUE,</span></span>
-<span id="cb24-305"><a href="#cb24-305" aria-hidden="true" tabindex="-1"></a><span class="in">   show_messages = F)</span></span>
-<span id="cb24-306"><a href="#cb24-306" aria-hidden="true" tabindex="-1"></a><span class="in"> mode=fit_opt$unconstrain_variables(list(param = fit_opt$mle("param")))</span></span>
-<span id="cb24-307"><a href="#cb24-307" aria-hidden="true" tabindex="-1"></a><span class="in"> hessian = fit_opt$hessian(unconstrained_variables = mode)$hessian</span></span>
-<span id="cb24-308"><a href="#cb24-308" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-309"><a href="#cb24-309" aria-hidden="true" tabindex="-1"></a><span class="in">logdet = unlist(purrr::map(1:data$nAnalytes,\(i) log(det(-hessian[((i-1)*3+1):((i-1)*3+3),((i-1)*3+1):((i-1)*3+3)]))))</span></span>
-<span id="cb24-310"><a href="#cb24-310" aria-hidden="true" tabindex="-1"></a><span class="in">return(logdet)</span></span>
-<span id="cb24-311"><a href="#cb24-311" aria-hidden="true" tabindex="-1"></a><span class="in">}</span></span>
-<span id="cb24-312"><a href="#cb24-312" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-286"><a href="#cb24-286" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb24-287"><a href="#cb24-287" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-288"><a href="#cb24-288" aria-hidden="true" tabindex="-1"></a><span class="fu">### Read the results and compare</span></span>
+<span id="cb24-289"><a href="#cb24-289" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-290"><a href="#cb24-290" aria-hidden="true" tabindex="-1"></a><span class="in">```{r single-form-analytes-logDet-summary}</span></span>
+<span id="cb24-291"><a href="#cb24-291" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_prior = c(65,66,209,210) # ref</span></span>
+<span id="cb24-292"><a href="#cb24-292" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_noprior= c(65,66,209,210) # ref</span></span>
+<span id="cb24-293"><a href="#cb24-293" aria-hidden="true" tabindex="-1"></a><span class="in">fws1_prior_ref = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_1, inits_1, chosen_indices_prior, n_iter = 0)</span></span>
+<span id="cb24-294"><a href="#cb24-294" aria-hidden="true" tabindex="-1"></a><span class="in">fws1_noprior_ref = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_1, inits_1, chosen_indices_noprior, n_iter = 0)</span></span>
+<span id="cb24-295"><a href="#cb24-295" aria-hidden="true" tabindex="-1"></a><span class="in">fws2_prior_ref = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_2, inits_2, chosen_indices_prior, n_iter = 0)</span></span>
+<span id="cb24-296"><a href="#cb24-296" aria-hidden="true" tabindex="-1"></a><span class="in">fws2_noprior_ref = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_2, inits_2, chosen_indices_noprior, n_iter = 0)</span></span>
+<span id="cb24-297"><a href="#cb24-297" aria-hidden="true" tabindex="-1"></a><span class="in">fws3_prior_ref = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_3, inits_3, chosen_indices_prior, n_iter = 0)</span></span>
+<span id="cb24-298"><a href="#cb24-298" aria-hidden="true" tabindex="-1"></a><span class="in">fws3_noprior_ref = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_3, inits_3, chosen_indices_noprior, n_iter = 0)</span></span>
+<span id="cb24-299"><a href="#cb24-299" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-300"><a href="#cb24-300" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_prior   = c(209,212) # p=2</span></span>
+<span id="cb24-301"><a href="#cb24-301" aria-hidden="true" tabindex="-1"></a><span class="in">fws1_prior_2 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_1, inits_1, chosen_indices_prior, n_iter = 0)</span></span>
+<span id="cb24-302"><a href="#cb24-302" aria-hidden="true" tabindex="-1"></a><span class="in">fws2_prior_2 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_2, inits_2, chosen_indices_prior, n_iter = 0)</span></span>
+<span id="cb24-303"><a href="#cb24-303" aria-hidden="true" tabindex="-1"></a><span class="in">fws3_prior_2 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_3, inits_3, chosen_indices_prior, n_iter = 0)</span></span>
+<span id="cb24-304"><a href="#cb24-304" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-305"><a href="#cb24-305" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_prior   = c(210,209,79) # p=3</span></span>
+<span id="cb24-306"><a href="#cb24-306" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_noprior = c(210,209,79) # p=3</span></span>
+<span id="cb24-307"><a href="#cb24-307" aria-hidden="true" tabindex="-1"></a><span class="in">fws1_prior_3 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_1, inits_1, chosen_indices_prior, n_iter = 0)</span></span>
+<span id="cb24-308"><a href="#cb24-308" aria-hidden="true" tabindex="-1"></a><span class="in">fws1_noprior_3 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_1, inits_1, chosen_indices_noprior, n_iter = 0)</span></span>
+<span id="cb24-309"><a href="#cb24-309" aria-hidden="true" tabindex="-1"></a><span class="in">fws2_prior_3 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_2, inits_2, chosen_indices_prior, n_iter = 0)</span></span>
+<span id="cb24-310"><a href="#cb24-310" aria-hidden="true" tabindex="-1"></a><span class="in">fws2_noprior_3 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_2, inits_2, chosen_indices_noprior, n_iter = 0)</span></span>
+<span id="cb24-311"><a href="#cb24-311" aria-hidden="true" tabindex="-1"></a><span class="in">fws3_prior_3 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_3, inits_3, chosen_indices_prior, n_iter = 0)</span></span>
+<span id="cb24-312"><a href="#cb24-312" aria-hidden="true" tabindex="-1"></a><span class="in">fws3_noprior_3 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_3, inits_3, chosen_indices_noprior, n_iter = 0)</span></span>
 <span id="cb24-313"><a href="#cb24-313" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-314"><a href="#cb24-314" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb24-315"><a href="#cb24-315" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-316"><a href="#cb24-316" aria-hidden="true" tabindex="-1"></a><span class="fu">### Read the results and compare</span></span>
-<span id="cb24-317"><a href="#cb24-317" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-318"><a href="#cb24-318" aria-hidden="true" tabindex="-1"></a><span class="in">```{r single-form-analytes-logDet-summary}</span></span>
-<span id="cb24-319"><a href="#cb24-319" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_prior = c(65,66,209,210) # ref</span></span>
-<span id="cb24-320"><a href="#cb24-320" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_noprior= c(65,66,209,210) # ref</span></span>
-<span id="cb24-321"><a href="#cb24-321" aria-hidden="true" tabindex="-1"></a><span class="in">fws1_prior_ref = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_1, inits_1, chosen_indices_prior, n_iter = 0)</span></span>
-<span id="cb24-322"><a href="#cb24-322" aria-hidden="true" tabindex="-1"></a><span class="in">fws1_noprior_ref = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_1, inits_1, chosen_indices_noprior, n_iter = 0)</span></span>
-<span id="cb24-323"><a href="#cb24-323" aria-hidden="true" tabindex="-1"></a><span class="in">fws2_prior_ref = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_2, inits_2, chosen_indices_prior, n_iter = 0)</span></span>
-<span id="cb24-324"><a href="#cb24-324" aria-hidden="true" tabindex="-1"></a><span class="in">fws2_noprior_ref = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_2, inits_2, chosen_indices_noprior, n_iter = 0)</span></span>
-<span id="cb24-325"><a href="#cb24-325" aria-hidden="true" tabindex="-1"></a><span class="in">fws3_prior_ref = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_3, inits_3, chosen_indices_prior, n_iter = 0)</span></span>
-<span id="cb24-326"><a href="#cb24-326" aria-hidden="true" tabindex="-1"></a><span class="in">fws3_noprior_ref = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_3, inits_3, chosen_indices_noprior, n_iter = 0)</span></span>
-<span id="cb24-327"><a href="#cb24-327" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-328"><a href="#cb24-328" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_prior   = c(209,212) # p=2</span></span>
-<span id="cb24-329"><a href="#cb24-329" aria-hidden="true" tabindex="-1"></a><span class="in">fws1_prior_2 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_1, inits_1, chosen_indices_prior, n_iter = 0)</span></span>
-<span id="cb24-330"><a href="#cb24-330" aria-hidden="true" tabindex="-1"></a><span class="in">fws2_prior_2 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_2, inits_2, chosen_indices_prior, n_iter = 0)</span></span>
-<span id="cb24-331"><a href="#cb24-331" aria-hidden="true" tabindex="-1"></a><span class="in">fws3_prior_2 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_3, inits_3, chosen_indices_prior, n_iter = 0)</span></span>
-<span id="cb24-332"><a href="#cb24-332" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-333"><a href="#cb24-333" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_prior   = c(210,209,79) # p=3</span></span>
-<span id="cb24-334"><a href="#cb24-334" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_noprior = c(210,209,79) # p=3</span></span>
-<span id="cb24-335"><a href="#cb24-335" aria-hidden="true" tabindex="-1"></a><span class="in">fws1_prior_3 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_1, inits_1, chosen_indices_prior, n_iter = 0)</span></span>
-<span id="cb24-336"><a href="#cb24-336" aria-hidden="true" tabindex="-1"></a><span class="in">fws1_noprior_3 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_1, inits_1, chosen_indices_noprior, n_iter = 0)</span></span>
-<span id="cb24-337"><a href="#cb24-337" aria-hidden="true" tabindex="-1"></a><span class="in">fws2_prior_3 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_2, inits_2, chosen_indices_prior, n_iter = 0)</span></span>
-<span id="cb24-338"><a href="#cb24-338" aria-hidden="true" tabindex="-1"></a><span class="in">fws2_noprior_3 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_2, inits_2, chosen_indices_noprior, n_iter = 0)</span></span>
-<span id="cb24-339"><a href="#cb24-339" aria-hidden="true" tabindex="-1"></a><span class="in">fws3_prior_3 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_3, inits_3, chosen_indices_prior, n_iter = 0)</span></span>
-<span id="cb24-340"><a href="#cb24-340" aria-hidden="true" tabindex="-1"></a><span class="in">fws3_noprior_3 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_3, inits_3, chosen_indices_noprior, n_iter = 0)</span></span>
-<span id="cb24-341"><a href="#cb24-341" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-342"><a href="#cb24-342" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_prior   = c(209,210,215,79) # p=4</span></span>
-<span id="cb24-343"><a href="#cb24-343" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_noprior = c(209,210,215,71) # p=4</span></span>
-<span id="cb24-344"><a href="#cb24-344" aria-hidden="true" tabindex="-1"></a><span class="in">fws1_prior_4 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_1, inits_1, chosen_indices_prior, n_iter = 0)</span></span>
-<span id="cb24-345"><a href="#cb24-345" aria-hidden="true" tabindex="-1"></a><span class="in">fws1_noprior_4 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_1, inits_1, chosen_indices_noprior, n_iter = 0)</span></span>
-<span id="cb24-346"><a href="#cb24-346" aria-hidden="true" tabindex="-1"></a><span class="in">fws2_prior_4 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_2, inits_2, chosen_indices_prior, n_iter = 0)</span></span>
-<span id="cb24-347"><a href="#cb24-347" aria-hidden="true" tabindex="-1"></a><span class="in">fws2_noprior_4 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_2, inits_2, chosen_indices_noprior, n_iter = 0)</span></span>
-<span id="cb24-348"><a href="#cb24-348" aria-hidden="true" tabindex="-1"></a><span class="in">fws3_prior_4 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_3, inits_3, chosen_indices_prior, n_iter = 0)</span></span>
-<span id="cb24-349"><a href="#cb24-349" aria-hidden="true" tabindex="-1"></a><span class="in">fws3_noprior_4 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_3, inits_3, chosen_indices_noprior, n_iter = 0)</span></span>
-<span id="cb24-350"><a href="#cb24-350" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-351"><a href="#cb24-351" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_prior = c(210,209,212,215,79) # p=5</span></span>
-<span id="cb24-352"><a href="#cb24-352" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_noprior = c(210,209,212,215,71) # p=5</span></span>
-<span id="cb24-353"><a href="#cb24-353" aria-hidden="true" tabindex="-1"></a><span class="in">fws1_prior_5 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_1, inits_1, chosen_indices_prior, n_iter = 0)</span></span>
-<span id="cb24-354"><a href="#cb24-354" aria-hidden="true" tabindex="-1"></a><span class="in">fws1_noprior_5 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_1, inits_1, chosen_indices_noprior, n_iter = 0)</span></span>
-<span id="cb24-355"><a href="#cb24-355" aria-hidden="true" tabindex="-1"></a><span class="in">fws2_prior_5 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_2, inits_2, chosen_indices_prior, n_iter = 0)</span></span>
-<span id="cb24-356"><a href="#cb24-356" aria-hidden="true" tabindex="-1"></a><span class="in">fws2_noprior_5 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_2, inits_2, chosen_indices_noprior, n_iter = 0)</span></span>
-<span id="cb24-357"><a href="#cb24-357" aria-hidden="true" tabindex="-1"></a><span class="in">fws3_prior_5 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_3, inits_3, chosen_indices_prior, n_iter = 0)</span></span>
-<span id="cb24-358"><a href="#cb24-358" aria-hidden="true" tabindex="-1"></a><span class="in">fws3_noprior_5 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_3, inits_3, chosen_indices_noprior, n_iter = 0)</span></span>
-<span id="cb24-359"><a href="#cb24-359" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-360"><a href="#cb24-360" aria-hidden="true" tabindex="-1"></a><span class="in">summary_results_diff = tibble(logP = logP1,</span></span>
-<span id="cb24-361"><a href="#cb24-361" aria-hidden="true" tabindex="-1"></a><span class="in">                          Type = NAB1,</span></span>
-<span id="cb24-362"><a href="#cb24-362" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws1_prior_ref = fws1_prior_ref$log_det_FIM,</span></span>
-<span id="cb24-363"><a href="#cb24-363" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws1_noprior_ref = fws1_noprior_ref$log_det_FIM,</span></span>
-<span id="cb24-364"><a href="#cb24-364" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws1_prior_2 = fws1_prior_2$log_det_FIM,</span></span>
-<span id="cb24-365"><a href="#cb24-365" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws1_prior_3 = fws1_prior_3$log_det_FIM,</span></span>
-<span id="cb24-366"><a href="#cb24-366" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws1_noprior_3 = fws1_noprior_3$log_det_FIM,</span></span>
-<span id="cb24-367"><a href="#cb24-367" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws1_prior_4 = fws1_prior_4$log_det_FIM,</span></span>
-<span id="cb24-368"><a href="#cb24-368" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws1_noprior_4 = fws1_noprior_4$log_det_FIM,</span></span>
-<span id="cb24-369"><a href="#cb24-369" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws1_prior_5 = fws1_prior_5$log_det_FIM,</span></span>
-<span id="cb24-370"><a href="#cb24-370" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws1_noprior_5 = fws1_noprior_5$log_det_FIM,</span></span>
-<span id="cb24-371"><a href="#cb24-371" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws2_prior_ref = fws2_prior_ref$log_det_FIM,</span></span>
-<span id="cb24-372"><a href="#cb24-372" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws2_noprior_ref = fws2_noprior_ref$log_det_FIM,</span></span>
-<span id="cb24-373"><a href="#cb24-373" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws2_prior_2 = fws2_prior_2$log_det_FIM,</span></span>
-<span id="cb24-374"><a href="#cb24-374" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws2_prior_3 = fws2_prior_3$log_det_FIM,</span></span>
-<span id="cb24-375"><a href="#cb24-375" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws2_noprior_3 = fws2_noprior_3$log_det_FIM,</span></span>
-<span id="cb24-376"><a href="#cb24-376" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws2_prior_4 = fws2_prior_4$log_det_FIM,</span></span>
-<span id="cb24-377"><a href="#cb24-377" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws2_noprior_4 = fws2_noprior_4$log_det_FIM,</span></span>
-<span id="cb24-378"><a href="#cb24-378" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws2_prior_5 = fws2_prior_5$log_det_FIM,</span></span>
-<span id="cb24-379"><a href="#cb24-379" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws2_noprior_5 = fws2_noprior_5$log_det_FIM,</span></span>
-<span id="cb24-380"><a href="#cb24-380" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws3_prior_ref = fws3_prior_ref$log_det_FIM,</span></span>
-<span id="cb24-381"><a href="#cb24-381" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws3_noprior_ref = fws3_noprior_ref$log_det_FIM,</span></span>
-<span id="cb24-382"><a href="#cb24-382" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws3_prior_2 = fws3_prior_2$log_det_FIM,</span></span>
-<span id="cb24-383"><a href="#cb24-383" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws3_prior_3 = fws3_prior_3$log_det_FIM,</span></span>
-<span id="cb24-384"><a href="#cb24-384" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws3_noprior_3 = fws3_noprior_3$log_det_FIM,</span></span>
-<span id="cb24-385"><a href="#cb24-385" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws3_prior_4 = fws3_prior_4$log_det_FIM,</span></span>
-<span id="cb24-386"><a href="#cb24-386" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws3_noprior_4 = fws3_noprior_4$log_det_FIM,</span></span>
-<span id="cb24-387"><a href="#cb24-387" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws3_prior_5 = fws3_prior_5$log_det_FIM,</span></span>
-<span id="cb24-388"><a href="#cb24-388" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws3_noprior_5 = fws3_noprior_5$log_det_FIM) %&gt;%</span></span>
-<span id="cb24-389"><a href="#cb24-389" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(d1_prior_ref = (fws2_prior_ref-fws1_prior_ref)/n_param,</span></span>
-<span id="cb24-390"><a href="#cb24-390" aria-hidden="true" tabindex="-1"></a><span class="in">         d1_noprior_ref = (fws2_noprior_ref-fws1_noprior_ref)/n_param,</span></span>
-<span id="cb24-391"><a href="#cb24-391" aria-hidden="true" tabindex="-1"></a><span class="in">         d1_prior_2 = (fws2_prior_2-fws1_prior_2)/n_param,</span></span>
-<span id="cb24-392"><a href="#cb24-392" aria-hidden="true" tabindex="-1"></a><span class="in">         d1_prior_3 = (fws2_prior_3-fws1_prior_3)/n_param,</span></span>
-<span id="cb24-393"><a href="#cb24-393" aria-hidden="true" tabindex="-1"></a><span class="in">         d1_noprior_3 = (fws2_noprior_3-fws1_noprior_3)/n_param,</span></span>
-<span id="cb24-394"><a href="#cb24-394" aria-hidden="true" tabindex="-1"></a><span class="in">         d1_prior_4 = (fws2_prior_4-fws1_prior_4)/n_param,</span></span>
-<span id="cb24-395"><a href="#cb24-395" aria-hidden="true" tabindex="-1"></a><span class="in">         d1_noprior_4 = (fws2_noprior_4-fws1_noprior_4)/n_param,</span></span>
-<span id="cb24-396"><a href="#cb24-396" aria-hidden="true" tabindex="-1"></a><span class="in">         d1_prior_5 = (fws2_prior_5-fws1_prior_5)/n_param,</span></span>
-<span id="cb24-397"><a href="#cb24-397" aria-hidden="true" tabindex="-1"></a><span class="in">         d1_noprior_5 = (fws2_noprior_5-fws1_noprior_5)/n_param,</span></span>
-<span id="cb24-398"><a href="#cb24-398" aria-hidden="true" tabindex="-1"></a><span class="in">         d2_prior_ref = ( fws3_prior_ref-fws1_prior_ref)/n_param,</span></span>
-<span id="cb24-399"><a href="#cb24-399" aria-hidden="true" tabindex="-1"></a><span class="in">         d2_noprior_ref = ( fws3_noprior_ref-fws1_noprior_ref)/n_param,</span></span>
-<span id="cb24-400"><a href="#cb24-400" aria-hidden="true" tabindex="-1"></a><span class="in">         d2_prior_2 = ( fws3_prior_2-fws1_prior_2)/n_param,</span></span>
-<span id="cb24-401"><a href="#cb24-401" aria-hidden="true" tabindex="-1"></a><span class="in">         d2_prior_3 = ( fws3_prior_3-fws1_prior_3)/n_param,</span></span>
-<span id="cb24-402"><a href="#cb24-402" aria-hidden="true" tabindex="-1"></a><span class="in">         d2_noprior_3 = ( fws3_noprior_3-fws1_noprior_3)/n_param,</span></span>
-<span id="cb24-403"><a href="#cb24-403" aria-hidden="true" tabindex="-1"></a><span class="in">         d2_prior_4 = ( fws3_prior_4-fws1_prior_4)/n_param,</span></span>
-<span id="cb24-404"><a href="#cb24-404" aria-hidden="true" tabindex="-1"></a><span class="in">         d2_noprior_4 = ( fws3_noprior_4-fws1_noprior_4)/n_param,</span></span>
-<span id="cb24-405"><a href="#cb24-405" aria-hidden="true" tabindex="-1"></a><span class="in">         d2_prior_5 = ( fws3_prior_5-fws1_prior_5)/n_param,</span></span>
-<span id="cb24-406"><a href="#cb24-406" aria-hidden="true" tabindex="-1"></a><span class="in">         d2_noprior_5 = ( fws3_noprior_5-fws1_noprior_5)/n_param)%&gt;%</span></span>
-<span id="cb24-407"><a href="#cb24-407" aria-hidden="true" tabindex="-1"></a><span class="in">  pivot_longer(d1_prior_ref:d2_noprior_5, names_to = "method")%&gt;%</span></span>
-<span id="cb24-408"><a href="#cb24-408" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(group = if_else(str_detect(method, pattern ="d2_"),"Gradient duration 30 vs 270 min","Gradient duration 90 vs 270 min")) %&gt;% </span></span>
-<span id="cb24-409"><a href="#cb24-409" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(method = str_replace(method, 'd1_|d2_', ''))</span></span>
-<span id="cb24-410"><a href="#cb24-410" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-411"><a href="#cb24-411" aria-hidden="true" tabindex="-1"></a><span class="in">p2=ggplot(summary_results_diff, aes(y=method,x=exp(value)))+</span></span>
-<span id="cb24-412"><a href="#cb24-412" aria-hidden="true" tabindex="-1"></a><span class="in">  geom_boxplot(outlier.size = 0.5)+</span></span>
-<span id="cb24-413"><a href="#cb24-413" aria-hidden="true" tabindex="-1"></a><span class="in">  geom_jitter(aes(y=method, x=exp(value), color=logP),size=0.5, alpha=0.1)+</span></span>
-<span id="cb24-414"><a href="#cb24-414" aria-hidden="true" tabindex="-1"></a><span class="in">  scale_color_continuous(type="viridis")+</span></span>
-<span id="cb24-415"><a href="#cb24-415" aria-hidden="true" tabindex="-1"></a><span class="in">  labs(x="Impact of gradient duration on the efficiency of designs", y = "Method")+</span></span>
-<span id="cb24-416"><a href="#cb24-416" aria-hidden="true" tabindex="-1"></a><span class="in">  geom_vline(xintercept = 1, linetype = "dotted")+facet_wrap(~group, ncol=1)</span></span>
-<span id="cb24-417"><a href="#cb24-417" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-418"><a href="#cb24-418" aria-hidden="true" tabindex="-1"></a><span class="in">p2</span></span>
-<span id="cb24-419"><a href="#cb24-419" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-420"><a href="#cb24-420" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave(.plot=p2, .filename=paste("single-form-analytes-logdFIM-comapretg.pdf"), .path = figures_dir)</span></span>
-<span id="cb24-421"><a href="#cb24-421" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave.png(.plot=p2, .filename=paste("single-form-analytes-logdFIM-comapretg.png"), .path = figures_dir)</span></span>
-<span id="cb24-422"><a href="#cb24-422" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb24-423"><a href="#cb24-423" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-424"><a href="#cb24-424" aria-hidden="true" tabindex="-1"></a><span class="fu"># Adjusted efficacy-figure</span></span>
-<span id="cb24-425"><a href="#cb24-425" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-426"><a href="#cb24-426" aria-hidden="true" tabindex="-1"></a><span class="in">```{r adjusted-plot}</span></span>
-<span id="cb24-427"><a href="#cb24-427" aria-hidden="true" tabindex="-1"></a><span class="in">summary_results_diff&lt;-summary_results_diff%&gt;%</span></span>
-<span id="cb24-428"><a href="#cb24-428" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(scale = if_else(str_detect(group, pattern ="30"),9,3))%&gt;% </span></span>
-<span id="cb24-429"><a href="#cb24-429" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(group = if_else(str_detect(group, pattern ="30"),"maxtg 270 vs 30 min","maxtg 270 vs 90 min"))</span></span>
-<span id="cb24-430"><a href="#cb24-430" aria-hidden="true" tabindex="-1"></a><span class="in">         </span></span>
-<span id="cb24-431"><a href="#cb24-431" aria-hidden="true" tabindex="-1"></a><span class="in">p3=ggplot(summary_results_diff, aes(y=method,x=exp(-value)/scale))+</span></span>
-<span id="cb24-432"><a href="#cb24-432" aria-hidden="true" tabindex="-1"></a><span class="in">  geom_boxplot(outlier.size = 0.5)+</span></span>
-<span id="cb24-433"><a href="#cb24-433" aria-hidden="true" tabindex="-1"></a><span class="in">  geom_jitter(aes(y=method, x=exp(-value)/scale, color=logP),size=0.5, alpha=0.1)+</span></span>
-<span id="cb24-434"><a href="#cb24-434" aria-hidden="true" tabindex="-1"></a><span class="in">  scale_color_continuous(type="viridis")+</span></span>
-<span id="cb24-435"><a href="#cb24-435" aria-hidden="true" tabindex="-1"></a><span class="in">  labs(x="Eperiment duration adjusted efficiency", y = "Method")+</span></span>
-<span id="cb24-436"><a href="#cb24-436" aria-hidden="true" tabindex="-1"></a><span class="in">  geom_vline(xintercept = 1, linetype = "dotted")+facet_wrap(~group, ncol=1)</span></span>
-<span id="cb24-437"><a href="#cb24-437" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-438"><a href="#cb24-438" aria-hidden="true" tabindex="-1"></a><span class="in">p3</span></span>
-<span id="cb24-439"><a href="#cb24-439" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave(.plot=p3, .filename=paste("single-form-analytes-logdFIM-comapretg.pdf"), .path = figures_dir)</span></span>
-<span id="cb24-440"><a href="#cb24-440" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave.png(.plot=p3, .filename=paste("single-form-analytes-logdFIM-comapretg.png"), .path = figures_dir)</span></span>
-<span id="cb24-441"><a href="#cb24-441" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb24-442"><a href="#cb24-442" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-443"><a href="#cb24-443" aria-hidden="true" tabindex="-1"></a><span class="fu"># Adjusted efficacy-table</span></span>
-<span id="cb24-444"><a href="#cb24-444" aria-hidden="true" tabindex="-1"></a><span class="in">```{r table}</span></span>
-<span id="cb24-445"><a href="#cb24-445" aria-hidden="true" tabindex="-1"></a><span class="in">tab1=summary_results_diff %&gt;% </span></span>
-<span id="cb24-446"><a href="#cb24-446" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(value = exp(-value)/scale) %&gt;%</span></span>
-<span id="cb24-447"><a href="#cb24-447" aria-hidden="true" tabindex="-1"></a><span class="in">  group_by(group,method) %&gt;% </span></span>
-<span id="cb24-448"><a href="#cb24-448" aria-hidden="true" tabindex="-1"></a><span class="in">  summarise(ptc_value = quantile(value, c(0.05, 0.5, 0.95)), q = c(0.05, 0.5, 0.95)) %&gt;%</span></span>
-<span id="cb24-449"><a href="#cb24-449" aria-hidden="true" tabindex="-1"></a><span class="in">  ungroup() %&gt;%</span></span>
-<span id="cb24-450"><a href="#cb24-450" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(across(c('ptc_value'), round, 2))%&gt;%</span></span>
-<span id="cb24-451"><a href="#cb24-451" aria-hidden="true" tabindex="-1"></a><span class="in">  pivot_wider(names_from = "q", values_from = ptc_value, names_prefix = "q")%&gt;%</span></span>
-<span id="cb24-452"><a href="#cb24-452" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(`adj. efficiency` = paste0(q0.5, " (", q0.05, " - ", q0.95, ")"))%&gt;%</span></span>
-<span id="cb24-453"><a href="#cb24-453" aria-hidden="true" tabindex="-1"></a><span class="in">  select(-starts_with("q"))%&gt;%</span></span>
-<span id="cb24-454"><a href="#cb24-454" aria-hidden="true" tabindex="-1"></a><span class="in">  as_grouped_data(groups = "group") %&gt;%</span></span>
-<span id="cb24-455"><a href="#cb24-455" aria-hidden="true" tabindex="-1"></a><span class="in">  flextable() %&gt;%</span></span>
-<span id="cb24-456"><a href="#cb24-456" aria-hidden="true" tabindex="-1"></a><span class="in">  autofit()</span></span>
-<span id="cb24-457"><a href="#cb24-457" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-458"><a href="#cb24-458" aria-hidden="true" tabindex="-1"></a><span class="in">tab1</span></span>
-<span id="cb24-459"><a href="#cb24-459" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb24-460"><a href="#cb24-460" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-461"><a href="#cb24-461" aria-hidden="true" tabindex="-1"></a><span class="fu"># References {.unnumbered}</span></span>
-<span id="cb24-462"><a href="#cb24-462" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-463"><a href="#cb24-463" aria-hidden="true" tabindex="-1"></a>::: {#refs}</span>
-<span id="cb24-464"><a href="#cb24-464" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb24-465"><a href="#cb24-465" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-466"><a href="#cb24-466" aria-hidden="true" tabindex="-1"></a><span class="fu"># Licenses {.unnumbered}</span></span>
-<span id="cb24-467"><a href="#cb24-467" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-468"><a href="#cb24-468" aria-hidden="true" tabindex="-1"></a><span class="ss">-   </span>Code &amp; copy; 2024, Paweł Wiczling, licensed under BSD-3.</span>
-<span id="cb24-469"><a href="#cb24-469" aria-hidden="true" tabindex="-1"></a><span class="ss">-   </span>Text &amp; copy; 2024, Paweł Wiczling, licensed under CC-BY-NC 4.0.</span>
-<span id="cb24-470"><a href="#cb24-470" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-471"><a href="#cb24-471" aria-hidden="true" tabindex="-1"></a><span class="fu"># Original Computing Environment {.unnumbered}</span></span>
-<span id="cb24-472"><a href="#cb24-472" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-473"><a href="#cb24-473" aria-hidden="true" tabindex="-1"></a><span class="in">```{r sessionInfo}</span></span>
-<span id="cb24-474"><a href="#cb24-474" aria-hidden="true" tabindex="-1"></a><span class="in">sessionInfo()</span></span>
-<span id="cb24-475"><a href="#cb24-475" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></pre></div>
+<span id="cb24-314"><a href="#cb24-314" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_prior   = c(209,210,215,79) # p=4</span></span>
+<span id="cb24-315"><a href="#cb24-315" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_noprior = c(209,210,215,71) # p=4</span></span>
+<span id="cb24-316"><a href="#cb24-316" aria-hidden="true" tabindex="-1"></a><span class="in">fws1_prior_4 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_1, inits_1, chosen_indices_prior, n_iter = 0)</span></span>
+<span id="cb24-317"><a href="#cb24-317" aria-hidden="true" tabindex="-1"></a><span class="in">fws1_noprior_4 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_1, inits_1, chosen_indices_noprior, n_iter = 0)</span></span>
+<span id="cb24-318"><a href="#cb24-318" aria-hidden="true" tabindex="-1"></a><span class="in">fws2_prior_4 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_2, inits_2, chosen_indices_prior, n_iter = 0)</span></span>
+<span id="cb24-319"><a href="#cb24-319" aria-hidden="true" tabindex="-1"></a><span class="in">fws2_noprior_4 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_2, inits_2, chosen_indices_noprior, n_iter = 0)</span></span>
+<span id="cb24-320"><a href="#cb24-320" aria-hidden="true" tabindex="-1"></a><span class="in">fws3_prior_4 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_3, inits_3, chosen_indices_prior, n_iter = 0)</span></span>
+<span id="cb24-321"><a href="#cb24-321" aria-hidden="true" tabindex="-1"></a><span class="in">fws3_noprior_4 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_3, inits_3, chosen_indices_noprior, n_iter = 0)</span></span>
+<span id="cb24-322"><a href="#cb24-322" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-323"><a href="#cb24-323" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_prior = c(210,209,212,215,79) # p=5</span></span>
+<span id="cb24-324"><a href="#cb24-324" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_noprior = c(210,209,212,215,71) # p=5</span></span>
+<span id="cb24-325"><a href="#cb24-325" aria-hidden="true" tabindex="-1"></a><span class="in">fws1_prior_5 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_1, inits_1, chosen_indices_prior, n_iter = 0)</span></span>
+<span id="cb24-326"><a href="#cb24-326" aria-hidden="true" tabindex="-1"></a><span class="in">fws1_noprior_5 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_1, inits_1, chosen_indices_noprior, n_iter = 0)</span></span>
+<span id="cb24-327"><a href="#cb24-327" aria-hidden="true" tabindex="-1"></a><span class="in">fws2_prior_5 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_2, inits_2, chosen_indices_prior, n_iter = 0)</span></span>
+<span id="cb24-328"><a href="#cb24-328" aria-hidden="true" tabindex="-1"></a><span class="in">fws2_noprior_5 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_2, inits_2, chosen_indices_noprior, n_iter = 0)</span></span>
+<span id="cb24-329"><a href="#cb24-329" aria-hidden="true" tabindex="-1"></a><span class="in">fws3_prior_5 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_3, inits_3, chosen_indices_prior, n_iter = 0)</span></span>
+<span id="cb24-330"><a href="#cb24-330" aria-hidden="true" tabindex="-1"></a><span class="in">fws3_noprior_5 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_3, inits_3, chosen_indices_noprior, n_iter = 0)</span></span>
+<span id="cb24-331"><a href="#cb24-331" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-332"><a href="#cb24-332" aria-hidden="true" tabindex="-1"></a><span class="in">summary_results_diff = tibble(logP = logP1,</span></span>
+<span id="cb24-333"><a href="#cb24-333" aria-hidden="true" tabindex="-1"></a><span class="in">                          Type = NAB1,</span></span>
+<span id="cb24-334"><a href="#cb24-334" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws1_prior_ref = fws1_prior_ref$log_det_FIM,</span></span>
+<span id="cb24-335"><a href="#cb24-335" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws1_noprior_ref = fws1_noprior_ref$log_det_FIM,</span></span>
+<span id="cb24-336"><a href="#cb24-336" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws1_prior_2 = fws1_prior_2$log_det_FIM,</span></span>
+<span id="cb24-337"><a href="#cb24-337" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws1_prior_3 = fws1_prior_3$log_det_FIM,</span></span>
+<span id="cb24-338"><a href="#cb24-338" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws1_noprior_3 = fws1_noprior_3$log_det_FIM,</span></span>
+<span id="cb24-339"><a href="#cb24-339" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws1_prior_4 = fws1_prior_4$log_det_FIM,</span></span>
+<span id="cb24-340"><a href="#cb24-340" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws1_noprior_4 = fws1_noprior_4$log_det_FIM,</span></span>
+<span id="cb24-341"><a href="#cb24-341" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws1_prior_5 = fws1_prior_5$log_det_FIM,</span></span>
+<span id="cb24-342"><a href="#cb24-342" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws1_noprior_5 = fws1_noprior_5$log_det_FIM,</span></span>
+<span id="cb24-343"><a href="#cb24-343" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws2_prior_ref = fws2_prior_ref$log_det_FIM,</span></span>
+<span id="cb24-344"><a href="#cb24-344" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws2_noprior_ref = fws2_noprior_ref$log_det_FIM,</span></span>
+<span id="cb24-345"><a href="#cb24-345" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws2_prior_2 = fws2_prior_2$log_det_FIM,</span></span>
+<span id="cb24-346"><a href="#cb24-346" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws2_prior_3 = fws2_prior_3$log_det_FIM,</span></span>
+<span id="cb24-347"><a href="#cb24-347" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws2_noprior_3 = fws2_noprior_3$log_det_FIM,</span></span>
+<span id="cb24-348"><a href="#cb24-348" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws2_prior_4 = fws2_prior_4$log_det_FIM,</span></span>
+<span id="cb24-349"><a href="#cb24-349" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws2_noprior_4 = fws2_noprior_4$log_det_FIM,</span></span>
+<span id="cb24-350"><a href="#cb24-350" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws2_prior_5 = fws2_prior_5$log_det_FIM,</span></span>
+<span id="cb24-351"><a href="#cb24-351" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws2_noprior_5 = fws2_noprior_5$log_det_FIM,</span></span>
+<span id="cb24-352"><a href="#cb24-352" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws3_prior_ref = fws3_prior_ref$log_det_FIM,</span></span>
+<span id="cb24-353"><a href="#cb24-353" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws3_noprior_ref = fws3_noprior_ref$log_det_FIM,</span></span>
+<span id="cb24-354"><a href="#cb24-354" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws3_prior_2 = fws3_prior_2$log_det_FIM,</span></span>
+<span id="cb24-355"><a href="#cb24-355" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws3_prior_3 = fws3_prior_3$log_det_FIM,</span></span>
+<span id="cb24-356"><a href="#cb24-356" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws3_noprior_3 = fws3_noprior_3$log_det_FIM,</span></span>
+<span id="cb24-357"><a href="#cb24-357" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws3_prior_4 = fws3_prior_4$log_det_FIM,</span></span>
+<span id="cb24-358"><a href="#cb24-358" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws3_noprior_4 = fws3_noprior_4$log_det_FIM,</span></span>
+<span id="cb24-359"><a href="#cb24-359" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws3_prior_5 = fws3_prior_5$log_det_FIM,</span></span>
+<span id="cb24-360"><a href="#cb24-360" aria-hidden="true" tabindex="-1"></a><span class="in">                          fws3_noprior_5 = fws3_noprior_5$log_det_FIM) %&gt;%</span></span>
+<span id="cb24-361"><a href="#cb24-361" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(d1_prior_ref = (fws2_prior_ref-fws1_prior_ref)/n_param,</span></span>
+<span id="cb24-362"><a href="#cb24-362" aria-hidden="true" tabindex="-1"></a><span class="in">         d1_noprior_ref = (fws2_noprior_ref-fws1_noprior_ref)/n_param,</span></span>
+<span id="cb24-363"><a href="#cb24-363" aria-hidden="true" tabindex="-1"></a><span class="in">         d1_prior_2 = (fws2_prior_2-fws1_prior_2)/n_param,</span></span>
+<span id="cb24-364"><a href="#cb24-364" aria-hidden="true" tabindex="-1"></a><span class="in">         d1_prior_3 = (fws2_prior_3-fws1_prior_3)/n_param,</span></span>
+<span id="cb24-365"><a href="#cb24-365" aria-hidden="true" tabindex="-1"></a><span class="in">         d1_noprior_3 = (fws2_noprior_3-fws1_noprior_3)/n_param,</span></span>
+<span id="cb24-366"><a href="#cb24-366" aria-hidden="true" tabindex="-1"></a><span class="in">         d1_prior_4 = (fws2_prior_4-fws1_prior_4)/n_param,</span></span>
+<span id="cb24-367"><a href="#cb24-367" aria-hidden="true" tabindex="-1"></a><span class="in">         d1_noprior_4 = (fws2_noprior_4-fws1_noprior_4)/n_param,</span></span>
+<span id="cb24-368"><a href="#cb24-368" aria-hidden="true" tabindex="-1"></a><span class="in">         d1_prior_5 = (fws2_prior_5-fws1_prior_5)/n_param,</span></span>
+<span id="cb24-369"><a href="#cb24-369" aria-hidden="true" tabindex="-1"></a><span class="in">         d1_noprior_5 = (fws2_noprior_5-fws1_noprior_5)/n_param,</span></span>
+<span id="cb24-370"><a href="#cb24-370" aria-hidden="true" tabindex="-1"></a><span class="in">         d2_prior_ref = ( fws3_prior_ref-fws1_prior_ref)/n_param,</span></span>
+<span id="cb24-371"><a href="#cb24-371" aria-hidden="true" tabindex="-1"></a><span class="in">         d2_noprior_ref = ( fws3_noprior_ref-fws1_noprior_ref)/n_param,</span></span>
+<span id="cb24-372"><a href="#cb24-372" aria-hidden="true" tabindex="-1"></a><span class="in">         d2_prior_2 = ( fws3_prior_2-fws1_prior_2)/n_param,</span></span>
+<span id="cb24-373"><a href="#cb24-373" aria-hidden="true" tabindex="-1"></a><span class="in">         d2_prior_3 = ( fws3_prior_3-fws1_prior_3)/n_param,</span></span>
+<span id="cb24-374"><a href="#cb24-374" aria-hidden="true" tabindex="-1"></a><span class="in">         d2_noprior_3 = ( fws3_noprior_3-fws1_noprior_3)/n_param,</span></span>
+<span id="cb24-375"><a href="#cb24-375" aria-hidden="true" tabindex="-1"></a><span class="in">         d2_prior_4 = ( fws3_prior_4-fws1_prior_4)/n_param,</span></span>
+<span id="cb24-376"><a href="#cb24-376" aria-hidden="true" tabindex="-1"></a><span class="in">         d2_noprior_4 = ( fws3_noprior_4-fws1_noprior_4)/n_param,</span></span>
+<span id="cb24-377"><a href="#cb24-377" aria-hidden="true" tabindex="-1"></a><span class="in">         d2_prior_5 = ( fws3_prior_5-fws1_prior_5)/n_param,</span></span>
+<span id="cb24-378"><a href="#cb24-378" aria-hidden="true" tabindex="-1"></a><span class="in">         d2_noprior_5 = ( fws3_noprior_5-fws1_noprior_5)/n_param)%&gt;%</span></span>
+<span id="cb24-379"><a href="#cb24-379" aria-hidden="true" tabindex="-1"></a><span class="in">  pivot_longer(d1_prior_ref:d2_noprior_5, names_to = "method")%&gt;%</span></span>
+<span id="cb24-380"><a href="#cb24-380" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(group = if_else(str_detect(method, pattern ="d2_"),"Gradient duration 30 vs 270 min","Gradient duration 90 vs 270 min")) %&gt;% </span></span>
+<span id="cb24-381"><a href="#cb24-381" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(method = str_replace(method, 'd1_|d2_', ''))</span></span>
+<span id="cb24-382"><a href="#cb24-382" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-383"><a href="#cb24-383" aria-hidden="true" tabindex="-1"></a><span class="in">p2=ggplot(summary_results_diff, aes(y=method,x=exp(value)))+</span></span>
+<span id="cb24-384"><a href="#cb24-384" aria-hidden="true" tabindex="-1"></a><span class="in">  geom_boxplot(outlier.size = 0.5)+</span></span>
+<span id="cb24-385"><a href="#cb24-385" aria-hidden="true" tabindex="-1"></a><span class="in">  geom_jitter(aes(y=method, x=exp(value), color=logP),size=0.5, alpha=0.1)+</span></span>
+<span id="cb24-386"><a href="#cb24-386" aria-hidden="true" tabindex="-1"></a><span class="in">  scale_color_continuous(type="viridis")+</span></span>
+<span id="cb24-387"><a href="#cb24-387" aria-hidden="true" tabindex="-1"></a><span class="in">  labs(x="Impact of gradient duration on the efficiency of designs", y = "Method")+</span></span>
+<span id="cb24-388"><a href="#cb24-388" aria-hidden="true" tabindex="-1"></a><span class="in">  geom_vline(xintercept = 1, linetype = "dotted")+facet_wrap(~group, ncol=1)</span></span>
+<span id="cb24-389"><a href="#cb24-389" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-390"><a href="#cb24-390" aria-hidden="true" tabindex="-1"></a><span class="in">p2</span></span>
+<span id="cb24-391"><a href="#cb24-391" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-392"><a href="#cb24-392" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave(.plot=p2, .filename=paste("single-form-analytes-logdFIM-comapretg.pdf"), .path = figures_dir)</span></span>
+<span id="cb24-393"><a href="#cb24-393" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave.png(.plot=p2, .filename=paste("single-form-analytes-logdFIM-comapretg.png"), .path = figures_dir)</span></span>
+<span id="cb24-394"><a href="#cb24-394" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb24-395"><a href="#cb24-395" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-396"><a href="#cb24-396" aria-hidden="true" tabindex="-1"></a><span class="fu"># Adjusted efficacy-figure</span></span>
+<span id="cb24-397"><a href="#cb24-397" aria-hidden="true" tabindex="-1"></a><span class="in">```{r adjusted-plot}</span></span>
+<span id="cb24-398"><a href="#cb24-398" aria-hidden="true" tabindex="-1"></a><span class="in">summary_results_diff&lt;-summary_results_diff%&gt;%</span></span>
+<span id="cb24-399"><a href="#cb24-399" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(scale = if_else(str_detect(group, pattern ="30"),9,3))%&gt;% </span></span>
+<span id="cb24-400"><a href="#cb24-400" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(group = if_else(str_detect(group, pattern ="30"),"maxtg 270 vs 30 min","maxtg 270 vs 90 min"))</span></span>
+<span id="cb24-401"><a href="#cb24-401" aria-hidden="true" tabindex="-1"></a><span class="in">         </span></span>
+<span id="cb24-402"><a href="#cb24-402" aria-hidden="true" tabindex="-1"></a><span class="in">p3=ggplot(summary_results_diff, aes(y=method,x=exp(-value)/scale))+</span></span>
+<span id="cb24-403"><a href="#cb24-403" aria-hidden="true" tabindex="-1"></a><span class="in">  geom_boxplot(outlier.size = 0.5)+</span></span>
+<span id="cb24-404"><a href="#cb24-404" aria-hidden="true" tabindex="-1"></a><span class="in">  geom_jitter(aes(y=method, x=exp(-value)/scale, color=logP),size=0.5, alpha=0.1)+</span></span>
+<span id="cb24-405"><a href="#cb24-405" aria-hidden="true" tabindex="-1"></a><span class="in">  scale_color_continuous(type="viridis")+</span></span>
+<span id="cb24-406"><a href="#cb24-406" aria-hidden="true" tabindex="-1"></a><span class="in">  labs(x="Eperiment duration adjusted efficiency", y = "Method")+</span></span>
+<span id="cb24-407"><a href="#cb24-407" aria-hidden="true" tabindex="-1"></a><span class="in">  geom_vline(xintercept = 1, linetype = "dotted")+facet_wrap(~group, ncol=1)</span></span>
+<span id="cb24-408"><a href="#cb24-408" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-409"><a href="#cb24-409" aria-hidden="true" tabindex="-1"></a><span class="in">p3</span></span>
+<span id="cb24-410"><a href="#cb24-410" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave(.plot=p3, .filename=paste("single-form-analytes-logdFIM-comapretg.pdf"), .path = figures_dir)</span></span>
+<span id="cb24-411"><a href="#cb24-411" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave.png(.plot=p3, .filename=paste("single-form-analytes-logdFIM-comapretg.png"), .path = figures_dir)</span></span>
+<span id="cb24-412"><a href="#cb24-412" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb24-413"><a href="#cb24-413" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-414"><a href="#cb24-414" aria-hidden="true" tabindex="-1"></a><span class="fu"># Adjusted efficacy-table</span></span>
+<span id="cb24-415"><a href="#cb24-415" aria-hidden="true" tabindex="-1"></a><span class="in">```{r table}</span></span>
+<span id="cb24-416"><a href="#cb24-416" aria-hidden="true" tabindex="-1"></a><span class="in">tab1=summary_results_diff %&gt;% </span></span>
+<span id="cb24-417"><a href="#cb24-417" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(value = exp(-value)/scale) %&gt;%</span></span>
+<span id="cb24-418"><a href="#cb24-418" aria-hidden="true" tabindex="-1"></a><span class="in">  group_by(group,method) %&gt;% </span></span>
+<span id="cb24-419"><a href="#cb24-419" aria-hidden="true" tabindex="-1"></a><span class="in">  summarise(ptc_value = quantile(value, c(0.05, 0.5, 0.95)), q = c(0.05, 0.5, 0.95)) %&gt;%</span></span>
+<span id="cb24-420"><a href="#cb24-420" aria-hidden="true" tabindex="-1"></a><span class="in">  ungroup() %&gt;%</span></span>
+<span id="cb24-421"><a href="#cb24-421" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(across(c('ptc_value'), round, 2))%&gt;%</span></span>
+<span id="cb24-422"><a href="#cb24-422" aria-hidden="true" tabindex="-1"></a><span class="in">  pivot_wider(names_from = "q", values_from = ptc_value, names_prefix = "q")%&gt;%</span></span>
+<span id="cb24-423"><a href="#cb24-423" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(`adj. efficiency` = paste0(q0.5, " (", q0.05, " - ", q0.95, ")"))%&gt;%</span></span>
+<span id="cb24-424"><a href="#cb24-424" aria-hidden="true" tabindex="-1"></a><span class="in">  select(-starts_with("q"))%&gt;%</span></span>
+<span id="cb24-425"><a href="#cb24-425" aria-hidden="true" tabindex="-1"></a><span class="in">  as_grouped_data(groups = "group") %&gt;%</span></span>
+<span id="cb24-426"><a href="#cb24-426" aria-hidden="true" tabindex="-1"></a><span class="in">  flextable() %&gt;%</span></span>
+<span id="cb24-427"><a href="#cb24-427" aria-hidden="true" tabindex="-1"></a><span class="in">  autofit()</span></span>
+<span id="cb24-428"><a href="#cb24-428" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-429"><a href="#cb24-429" aria-hidden="true" tabindex="-1"></a><span class="in">tab1</span></span>
+<span id="cb24-430"><a href="#cb24-430" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb24-431"><a href="#cb24-431" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-432"><a href="#cb24-432" aria-hidden="true" tabindex="-1"></a><span class="fu"># References {.unnumbered}</span></span>
+<span id="cb24-433"><a href="#cb24-433" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-434"><a href="#cb24-434" aria-hidden="true" tabindex="-1"></a>::: {#refs}</span>
+<span id="cb24-435"><a href="#cb24-435" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb24-436"><a href="#cb24-436" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-437"><a href="#cb24-437" aria-hidden="true" tabindex="-1"></a><span class="fu"># Licenses {.unnumbered}</span></span>
+<span id="cb24-438"><a href="#cb24-438" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-439"><a href="#cb24-439" aria-hidden="true" tabindex="-1"></a><span class="ss">-   </span>Code &amp; copy; 2024, Paweł Wiczling, licensed under BSD-3.</span>
+<span id="cb24-440"><a href="#cb24-440" aria-hidden="true" tabindex="-1"></a><span class="ss">-   </span>Text &amp; copy; 2024, Paweł Wiczling, licensed under CC-BY-NC 4.0.</span>
+<span id="cb24-441"><a href="#cb24-441" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-442"><a href="#cb24-442" aria-hidden="true" tabindex="-1"></a><span class="fu"># Original Computing Environment {.unnumbered}</span></span>
+<span id="cb24-443"><a href="#cb24-443" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-444"><a href="#cb24-444" aria-hidden="true" tabindex="-1"></a><span class="in">```{r sessionInfo}</span></span>
+<span id="cb24-445"><a href="#cb24-445" aria-hidden="true" tabindex="-1"></a><span class="in">sessionInfo()</span></span>
+<span id="cb24-446"><a href="#cb24-446" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></pre></div>
 </div></div></div></div></div>
 </div> <!-- /content -->
 
