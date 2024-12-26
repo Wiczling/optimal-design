@@ -13,6 +13,7 @@ format:
     code-tools: true
     fig-width: 7
     fig-height: 7
+bibliography: references.bib
 ---
 
 ```{r setuphtml, include=FALSE}
@@ -86,7 +87,7 @@ ggsave(plot=.plot, filename=.filename, path=.path, height=.height, width=.width)
 
 # Priors
 
-Priors are based on the following article "Comparison of Chromatographic Stationary Phases Using a Bayesian-Based Multilevel Model" by Paweł Wiczling and Agnieszka Kamedulska published in Analytical Chemistry 2024 96 (3), 1310-1319. In this work a simplified approach is taken with the focus on the neutral, acidic and basic forms of analytes and a single chromatographic stationary phase (Xbridge), assuming the pKa and changes of pKa with organic modifier are known.
+Priors are based on the following article "Comparison of Chromatographic Stationary Phases Using a Bayesian-Based Multilevel Model" [@kamedulska_toward_2022,]. In this work a simplified approach is taken with the focus on the neutral, acidic and basic forms of analytes and a single chromatographic stationary phase (XBridge Shield RP18 column [@kubik_XBridgeC18_2022,]), assuming the pKa and changes of pKa with organic modifier are known.
 
 ```{r literature-priors}
 # fun_generate_priors defined in helper_functions.R
@@ -147,7 +148,7 @@ mod_analytes$compile(compile_model_methods=TRUE,force_recompile=TRUE)
 
 ## Simulate retention times and create datasets
 
-The simulation involved n = 500 analytes with log P and analyte type (acid and base) drawn at random from the following distributions:  $logP_i \sim normal(2,2.2)$ and $Analyte_i \sim categorical(A=0.5,B=0.5)$. Log P values were truncated within 0.5 and 7. For single pH scenarios the analyte form distribution was 40% for neutral, 30% for acidic, and 30% for basic form. 
+The simulation involved n = 500 analytes with log P and analyte type (acid and base) drawn at random from the following distributions:  $logP_i \sim normal(2,2.2)$ and $Analyte_i \sim categorical(A=0.5,B=0.5)$. Log P values were constrained to a range between 0.5 and 7. For single pH scenarios the analyte form distribution was 40% for neutral, 30% for acidic, and 30% for basic form. 
   
 ```{r single-form-analytes-simulations}
 data_ma=hplcparam_candidates_df%>%filter(xpH==0)
