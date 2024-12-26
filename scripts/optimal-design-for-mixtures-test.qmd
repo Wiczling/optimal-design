@@ -1,0 +1,434 @@
+---
+title: "Leveraging Prior Knowledge for Improved Retention Prediction in Reversed-Phase HPLC"
+author:
+  - name: "Paweł Wiczling*"
+    affiliations:
+      - name: "Department of Biopharmaceutics and Pharmacodynamics, Medical University of Gdańsk, Gen. J. Hallera 107, 80-416 Gdańsk, Poland"
+date: "`r format(Sys.Date())`"
+format:
+  html:
+    theme: cosmo
+    toc: true
+    code-fold: true  
+    code-tools: true
+    fig-width: 7
+    fig-height: 7
+---
+
+```{r setuphtml, include=FALSE}
+knitr::opts_chunk$set(cache=TRUE, message=FALSE, error=FALSE, warning=FALSE, comment=NA, out.width='95%')
+#usethis::create_github_token()
+```
+
+# Setup
+
+The packages we will use are listed below.
+
+```{r setup}
+library(cmdstanr)
+library(pracma)
+library(numDeriv)
+library(dplyr)
+library(ggplot2)
+library(mvtnorm)
+library(tidyr)
+library(purrr)
+library(mrgmisc)
+library(patchwork)
+library(stringr)
+library(reshape2)
+library(here)
+library(tibble)
+library(flextable)
+select = dplyr::select
+# remotes::install_github("metrumresearchgroup/mrgmisc")
+# for parallel calculation use linux (mclaplly), i.e. Ubuntu 24.04 on Windows WSL
+# usethis::edit_r_environ(), add PROCESSX_NOTIFY_OLD_SIGCHLD = 1 ????
+#' Helper functions
+source("helper_functions.R")
+```
+
+```{r paths}
+#' folder shortcuts:
+
+figures_dir<- here("deliv", "figures", "manuscript")
+tables_dir  <- here("deliv", "tables", "manuscript")
+
+if (!file.exists(figures_dir)) dir.create(figures_dir, recursive = T)
+if (!file.exists(tables_dir)) dir.create(tables_dir, recursive = T)
+
+thisScript <- "optimal-design-for-mixtures-test-30"
+```
+
+```{r helper-save-functions}
+my.ggsave <- function(.plot, .filename, .path=figures_dir, .height= 7, .width= 6) {
+ggsave(plot=.plot, filename=.filename, path=.path, height=.height, width=.width)
+}
+my.ggsave.png <- function(.plot, .filename, .path=figures_dir, .height=7, .width= 6) {
+ggsave(plot=.plot, filename=.filename, path=.path, height=.height, width=.width)
+}
+```
+# Introduction
+
+# Priors
+```{r literature-priors}
+# fun_generate_priors defined in helper_functions.R
+priorsN_MeOH=fun_generate_priors("N_MeOH", logP=2.2)
+priorsN_ACN=fun_generate_priors("N_ACN", logP=2.2)
+priorsN=fun_generate_priors("N", logP=2.2)
+priorsA=fun_generate_priors("A", logP=2.2)
+priorsB=fun_generate_priors("B", logP=2.2)
+priorsNB=fun_generate_priors("NB", logP=2.2)
+priorsNA=fun_generate_priors("NA", logP=2.2)
+```
+
+```{r design-space}
+hplcparam_candidates_df_270 = expand_grid(tg=seq(10,270,by=10), 
+                                          td=2.1, 
+                                          to=0.532,
+                                          te=0.04, 
+                                          fio = seq(0.05, 0.2, by=0.05),
+                                          fif = 0.8,
+                                          m=c(0,1),
+                                          xpH=c(0,1))
+
+hplcparam_candidates_df_90<-hplcparam_candidates_df_270%>%
+  mutate(tg=tg/3)
+
+
+hplcparam_candidates_df_30<-hplcparam_candidates_df_270%>%
+  mutate(tg=tg/3/3)
+```
+
+# Read the results
+
+# Stan multiple analytes. Single form analytes. fi and tg for MeOH and ACN as design variables
+
+## Compile stan models
+```{r single-form-analytes-compilation}
+mod_analytes_gq= cmdstan_model("../stan/hplc-gra-single-form-analytes-gq.stan", stanc_options = list("O1"))
+mod_analytes_sim = cmdstan_model("../stan/hplc-gra-single-form-analytes-sim.stan", stanc_options = list("O1"))
+mod_analytes = cmdstan_model("../stan/hplc-gra-single-form-analytes.stan", stanc_options = list("O1"))
+mod_analytes$compile(compile_model_methods=TRUE,force_recompile=TRUE)
+```
+### maxtg=90
+```{r single-form-analytes-simulations-2}
+data_ma=hplcparam_candidates_df_90%>%filter(xpH==0)
+nObs = nrow(data_ma);
+nAnalytes =50;
+cseed = 1234;
+n_param = 3;
+n_rep = 10;
+
+datastruct_noprior_ma=list()
+datastruct_prior_ma=list()
+inits = list()
+
+for (i in 1:n_rep) {
+datastruct_prior_ma[[i]] = list(nObs=nObs,
+                   nAnalytes=nAnalytes,
+                   steps = 4 + 6*data_ma$m,
+                   hplcparam=as.matrix(data_ma%>%dplyr::select(c(tg,td,to,te,fio,fif,m))),
+                   include_prior = 1,
+                   run_estimation=1,
+                   nSel = nObs,
+                   selected = 1:nObs)
+
+fit_gq  = mod_analytes_gq$sample(data = datastruct_prior_ma[[i]],
+                                         seed = cseed,
+                                         fixed_param = TRUE,
+                                         chains = 1,
+                                         iter_sampling=1)
+
+datastruct_prior_ma[[i]]$trobs = matrix(fit_gq$draws(format = "matrix", variable = "y_hat_sim"),nAnalytes,nObs)
+datastruct_prior_ma[[i]]$logPobs = fit_gq$draws(format = "matrix", variable = "logPobs")[1:nAnalytes]
+datastruct_prior_ma[[i]]$N1A2B3 = fit_gq$draws(format = "matrix", variable = "N1A2B3")[1:nAnalytes]
+param = matrix(fit_gq$draws(format = "matrix", variable = "paramsim"),nAnalytes,3)
+
+
+datastruct_noprior_ma[[i]]=datastruct_prior_ma[[i]];
+datastruct_noprior_ma[[i]]$include_prior = 0.01;
+
+inits[[i]]=param
+
+cseed = cseed+1
+}
+
+logP2 = unlist(purrr::map(1:length(datastruct_noprior_ma),\(i) datastruct_noprior_ma[[i]]$logPobs))
+NAB2 = unlist(purrr::map(1:length(datastruct_noprior_ma),\(i) datastruct_noprior_ma[[i]]$N1A2B3))
+
+inits_2 = inits
+datastruct_prior_ma_2 = datastruct_prior_ma
+datastruct_noprior_ma_2 = datastruct_noprior_ma
+```
+
+### maxtg=30
+```{r single-form-analytes-simulations-3}
+data_ma=hplcparam_candidates_df_30%>%filter(xpH==0)
+nObs = nrow(data_ma);
+nAnalytes =50;
+cseed = 1234;
+n_param = 3;
+n_rep = 10;
+
+datastruct_noprior_ma=list()
+datastruct_prior_ma=list()
+inits = list()
+
+for (i in 1:n_rep) {
+datastruct_prior_ma[[i]] = list(nObs=nObs,
+                   nAnalytes=nAnalytes,
+                   steps = 4 + 6*data_ma$m,
+                   hplcparam=as.matrix(data_ma%>%dplyr::select(c(tg,td,to,te,fio,fif,m))),
+                   include_prior = 1,
+                   run_estimation=1,
+                   nSel = nObs,
+                   selected = 1:nObs)
+
+fit_gq  = mod_analytes_gq$sample(data = datastruct_prior_ma[[i]],
+                                         seed = cseed,
+                                         fixed_param = TRUE,
+                                         chains = 1,
+                                         iter_sampling=1)
+
+datastruct_prior_ma[[i]]$trobs = matrix(fit_gq$draws(format = "matrix", variable = "y_hat_sim"),nAnalytes,nObs)
+datastruct_prior_ma[[i]]$logPobs = fit_gq$draws(format = "matrix", variable = "logPobs")[1:nAnalytes]
+datastruct_prior_ma[[i]]$N1A2B3 = fit_gq$draws(format = "matrix", variable = "N1A2B3")[1:nAnalytes]
+param = matrix(fit_gq$draws(format = "matrix", variable = "paramsim"),nAnalytes,3)
+
+
+datastruct_noprior_ma[[i]]=datastruct_prior_ma[[i]];
+datastruct_noprior_ma[[i]]$include_prior = 0.01;
+
+inits[[i]]=param
+
+cseed = cseed+1
+}
+
+logP3 = unlist(purrr::map(1:length(datastruct_noprior_ma),\(i) datastruct_noprior_ma[[i]]$logPobs))
+NAB3 = unlist(purrr::map(1:length(datastruct_noprior_ma),\(i) datastruct_noprior_ma[[i]]$N1A2B3))
+
+inits_3 = inits
+datastruct_prior_ma_3 = datastruct_prior_ma
+datastruct_noprior_ma_3 = datastruct_noprior_ma
+```
+
+```{r fun}
+mean_log_det_stan = function(data, init, chosen_indices, S){
+  
+init_ma = function(){list(param=init)}
+data$selected = chosen_indices;
+data$nSel = length(chosen_indices);
+
+ fit_opt  = mod_analytes$optimize(
+   data = data,
+   output_dir = here::here("stanfiles"),
+   output_basename = S,
+   seed = cseed,
+   init = init_ma,
+   jacobian = TRUE,
+   show_messages = F)
+ mode=fit_opt$unconstrain_variables(list(param = fit_opt$mle("param")))
+ hessian = fit_opt$hessian(unconstrained_variables = mode)$hessian
+
+logdet = unlist(purrr::map(1:data$nAnalytes,\(i) log(det(-hessian[((i-1)*3+1):((i-1)*3+3),((i-1)*3+1):((i-1)*3+3)]))))
+return(logdet)
+}
+
+
+```
+
+
+### Read the results and compare - 90
+
+```{r single-form-analytes-logDet-summary-90}
+chosen_indices_prior = c(65,66,209,210) # ref
+chosen_indices_noprior= c(65,66,209,210) # ref
+fws1_prior_ref = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_2, inits_2, chosen_indices_prior, n_iter = 0)
+fws1_noprior_ref = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_2, inits_2, chosen_indices_noprior, n_iter = 0)
+fws2_prior_ref = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_2, inits_2, chosen_indices_prior, n_iter = 0)
+fws2_noprior_ref = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_2, inits_2, chosen_indices_noprior, n_iter = 0)
+
+chosen_indices_prior   = c(209,212) # p=2
+fws1_prior_2 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_2, inits_2, chosen_indices_prior, n_iter = 0)
+chosen_indices_prior   = c(209,212) # p=2
+fws2_prior_2 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_2, inits_2, chosen_indices_prior, n_iter = 0)
+
+chosen_indices_prior   = c(210,209,79) # p=3
+chosen_indices_noprior = c(210,209,79) # p=3
+fws1_prior_3 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_2, inits_2, chosen_indices_prior, n_iter = 0)
+fws1_noprior_3 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_2, inits_2, chosen_indices_noprior, n_iter = 0)
+chosen_indices_prior   = c(212,209,215) # p=3
+chosen_indices_noprior = c(212,209,71) # p=3
+fws2_prior_3 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_2, inits_2, chosen_indices_prior, n_iter = 0)
+fws2_noprior_3 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_2, inits_2, chosen_indices_noprior, n_iter = 0)
+
+chosen_indices_prior   = c(209,210,215,79) # p=4
+chosen_indices_noprior = c(209,210,215,71) # p=4
+fws1_prior_4 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_2, inits_2, chosen_indices_prior, n_iter = 0)
+fws1_noprior_4 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_2, inits_2, chosen_indices_noprior, n_iter = 0)
+chosen_indices_prior   = c(209,212,215,71) # p=4
+chosen_indices_noprior = c(209,212,215,71) # p=4
+fws2_prior_4 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_2, inits_2, chosen_indices_prior, n_iter = 0)
+fws2_noprior_4 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_2, inits_2, chosen_indices_noprior, n_iter = 0)
+
+chosen_indices_prior = c(210,209,212,215,79) # p=5
+chosen_indices_noprior = c(210,209,212,215,71) # p=5
+fws1_prior_5 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_2, inits_2, chosen_indices_prior, n_iter = 0)
+fws1_noprior_5 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_2, inits_3, chosen_indices_noprior, n_iter = 0)
+chosen_indices_prior = c(210,209,214,215,79) # p=5
+chosen_indices_noprior = c(210,209,216,215,71) # p=5
+fws2_prior_5 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_2, inits_2, chosen_indices_prior, n_iter = 0)
+fws2_noprior_5 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_2, inits_2, chosen_indices_noprior, n_iter = 0)
+
+summary_results_diff = tibble(logP = logP2,
+                          Type = NAB2,
+                          fws1_prior_ref = fws1_prior_ref$log_det_FIM,
+                          fws1_noprior_ref = fws1_noprior_ref$log_det_FIM,
+                          fws1_prior_2 = fws1_prior_2$log_det_FIM,
+                          fws1_prior_3 = fws1_prior_3$log_det_FIM,
+                          fws1_noprior_3 = fws1_noprior_3$log_det_FIM,
+                          fws1_prior_4 = fws1_prior_4$log_det_FIM,
+                          fws1_noprior_4 = fws1_noprior_4$log_det_FIM,
+                          fws1_prior_5 = fws1_prior_5$log_det_FIM,
+                          fws1_noprior_5 = fws1_noprior_5$log_det_FIM,
+                          fws2_prior_ref = fws2_prior_ref$log_det_FIM,
+                          fws2_noprior_ref = fws2_noprior_ref$log_det_FIM,
+                          fws2_prior_2 = fws2_prior_2$log_det_FIM,
+                          fws2_prior_3 = fws2_prior_3$log_det_FIM,
+                          fws2_noprior_3 = fws2_noprior_3$log_det_FIM,
+                          fws2_prior_4 = fws2_prior_4$log_det_FIM,
+                          fws2_noprior_4 = fws2_noprior_4$log_det_FIM,
+                          fws2_prior_5 = fws2_prior_5$log_det_FIM,
+                          fws2_noprior_5 = fws2_noprior_5$log_det_FIM,
+                          ) %>%
+  mutate(d1_prior_ref = (fws2_prior_ref-fws1_prior_ref)/n_param,
+         d1_noprior_ref = (fws2_noprior_ref-fws1_noprior_ref)/n_param,
+         d1_prior_2 = (fws2_prior_2-fws1_prior_2)/n_param,
+         d1_prior_3 = (fws2_prior_3-fws1_prior_3)/n_param,
+         d1_noprior_3 = (fws2_noprior_3-fws1_noprior_3)/n_param,
+         d1_prior_4 = (fws2_prior_4-fws1_prior_4)/n_param,
+         d1_noprior_4 = (fws2_noprior_4-fws1_noprior_4)/n_param,
+         d1_prior_5 = (fws2_prior_5-fws1_prior_5)/n_param,
+         d1_noprior_5 = (fws2_noprior_5-fws1_noprior_5)/n_param)%>%
+  pivot_longer(d1_prior_ref:d1_noprior_5, names_to = "method")
+
+p1=ggplot(summary_results_diff, aes(y=method,x=exp(value)))+
+  geom_boxplot(outlier.size = 0.5)+
+  geom_jitter(aes(y=method, x=exp(value), color=logP),size=0.5, alpha=0.1)+
+  scale_color_continuous(type="viridis")+
+  labs(x="Efficiency of designs (optimzed for maxtg = 90 and based on maxtg = 270)", y = "Method")+
+  geom_vline(xintercept = 1, linetype = "dotted")
+```
+
+### Read the results and compare - 30
+
+```{r single-form-analytes-logDet-summary-30}
+chosen_indices_prior = c(65,66,209,210) # ref
+chosen_indices_noprior= c(65,66,209,210) # ref
+fws1_prior_ref = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_3, inits_3, chosen_indices_prior, n_iter = 0)
+fws1_noprior_ref = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_3, inits_3, chosen_indices_noprior, n_iter = 0)
+fws2_prior_ref = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_3, inits_3, chosen_indices_prior, n_iter = 0)
+fws2_noprior_ref = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_3, inits_3, chosen_indices_noprior, n_iter = 0)
+
+chosen_indices_prior   = c(209,212) # p=2
+fws1_prior_2 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_3, inits_3, chosen_indices_prior, n_iter = 0)
+chosen_indices_prior   = c(213,214) # p=2
+fws2_prior_2 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_3, inits_3, chosen_indices_prior, n_iter = 0)
+
+chosen_indices_prior   = c(210,209,79) # p=3
+chosen_indices_noprior = c(210,209,79) # p=3
+fws1_prior_3 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_3, inits_3, chosen_indices_prior, n_iter = 0)
+fws1_noprior_3 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_3, inits_3, chosen_indices_noprior, n_iter = 0)
+chosen_indices_prior   = c(214,209,215) # p=3
+chosen_indices_noprior = c(214,211,63) # p=3
+fws2_prior_3 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_3, inits_3, chosen_indices_prior, n_iter = 0)
+fws2_noprior_3 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_3, inits_3, chosen_indices_noprior, n_iter = 0)
+
+chosen_indices_prior   = c(209,210,215,79) # p=4
+chosen_indices_noprior = c(209,210,215,71) # p=4
+fws1_prior_4 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_3, inits_3, chosen_indices_prior, n_iter = 0)
+fws1_noprior_4 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_3, inits_3, chosen_indices_noprior, n_iter = 0)
+chosen_indices_prior   = c(209,212,215,216) # p=4
+chosen_indices_noprior = c(209,214,215,63) # p=4
+fws2_prior_4 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_3, inits_3, chosen_indices_prior, n_iter = 0)
+fws2_noprior_4 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_3, inits_3, chosen_indices_noprior, n_iter = 0)
+
+chosen_indices_prior = c(210,209,212,215,79) # p=5
+chosen_indices_noprior = c(210,209,212,215,71) # p=5
+fws1_prior_5 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_3, inits_3, chosen_indices_prior, n_iter = 0)
+fws1_noprior_5 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_3, inits_3, chosen_indices_noprior, n_iter = 0)
+chosen_indices_prior = c(207,209,212,215,216) # p=5
+chosen_indices_noprior = c(216,209,212,215,63) # p=5
+fws2_prior_5 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma_3, inits_3, chosen_indices_prior, n_iter = 0)
+fws2_noprior_5 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma_3, inits_3, chosen_indices_noprior, n_iter = 0)
+
+summary_results_diff = tibble(logP = logP3,
+                          Type = NAB3,
+                          fws1_prior_ref = fws1_prior_ref$log_det_FIM,
+                          fws1_noprior_ref = fws1_noprior_ref$log_det_FIM,
+                          fws1_prior_2 = fws1_prior_2$log_det_FIM,
+                          fws1_prior_3 = fws1_prior_3$log_det_FIM,
+                          fws1_noprior_3 = fws1_noprior_3$log_det_FIM,
+                          fws1_prior_4 = fws1_prior_4$log_det_FIM,
+                          fws1_noprior_4 = fws1_noprior_4$log_det_FIM,
+                          fws1_prior_5 = fws1_prior_5$log_det_FIM,
+                          fws1_noprior_5 = fws1_noprior_5$log_det_FIM,
+                          fws2_prior_ref = fws2_prior_ref$log_det_FIM,
+                          fws2_noprior_ref = fws2_noprior_ref$log_det_FIM,
+                          fws2_prior_2 = fws2_prior_2$log_det_FIM,
+                          fws2_prior_3 = fws2_prior_3$log_det_FIM,
+                          fws2_noprior_3 = fws2_noprior_3$log_det_FIM,
+                          fws2_prior_4 = fws2_prior_4$log_det_FIM,
+                          fws2_noprior_4 = fws2_noprior_4$log_det_FIM,
+                          fws2_prior_5 = fws2_prior_5$log_det_FIM,
+                          fws2_noprior_5 = fws2_noprior_5$log_det_FIM,
+                          ) %>%
+  mutate(d1_prior_ref = (fws2_prior_ref-fws1_prior_ref)/n_param,
+         d1_noprior_ref = (fws2_noprior_ref-fws1_noprior_ref)/n_param,
+         d1_prior_2 = (fws2_prior_2-fws1_prior_2)/n_param,
+         d1_prior_3 = (fws2_prior_3-fws1_prior_3)/n_param,
+         d1_noprior_3 = (fws2_noprior_3-fws1_noprior_3)/n_param,
+         d1_prior_4 = (fws2_prior_4-fws1_prior_4)/n_param,
+         d1_noprior_4 = (fws2_noprior_4-fws1_noprior_4)/n_param,
+         d1_prior_5 = (fws2_prior_5-fws1_prior_5)/n_param,
+         d1_noprior_5 = (fws2_noprior_5-fws1_noprior_5)/n_param)%>%
+  pivot_longer(d1_prior_ref:d1_noprior_5, names_to = "method")
+
+p2=ggplot(summary_results_diff, aes(y=method,x=exp(value)))+
+  geom_boxplot(outlier.size = 0.5)+
+  geom_jitter(aes(y=method, x=exp(value), color=logP),size=0.5, alpha=0.1)+
+  scale_color_continuous(type="viridis")+
+  labs(x=" Efficiency of designs (optimzed for maxtg = 30 and based on maxtg = 270)", y = "Method")+
+  geom_vline(xintercept = 1, linetype = "dotted")
+```
+
+# Combine 
+```{r combine}
+
+plot = p1/p2 +
+  plot_layout(guides = "collect")&
+                  theme(legend.position = 'bottom',plot.title = element_text(size = 8),
+                                axis.title = element_text(size = 8),
+                                axis.text  = element_text(size = 6))
+my.ggsave(.plot=p2, .filename=paste("single-form-analytes-logdFIM-test.pdf"), .path = figures_dir)
+my.ggsave.png(.plot=p2, .filename=paste("single-form-analytes-logdFIM-test.png"), .path = figures_dir)
+
+plot
+```
+
+# References {.unnumbered}
+
+::: {#refs}
+:::
+
+# Licenses {.unnumbered}
+
+-   Code & copy; 2024, Paweł Wiczling, licensed under BSD-3.
+-   Text & copy; 2024, Paweł Wiczling, licensed under CC-BY-NC 4.0.
+
+# Original Computing Environment {.unnumbered}
+
+```{r sessionInfo}
+sessionInfo()
+```

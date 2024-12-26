@@ -1,0 +1,15 @@
+cmdstanr
+pracma
+numDeriv
+dplyr
+ggplot2
+mvtnorm
+tidyr
+purrr
+mrgmisc
+patchwork
+stringr
+reshape2
+here
+tibble
+flextable

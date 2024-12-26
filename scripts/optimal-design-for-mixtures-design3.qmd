@@ -1,0 +1,818 @@
+---
+title: "Design3: Leveraging Prior Knowledge for Improved Retention Prediction in Reversed-Phase HPLC"
+author:
+  - name: "Paweł Wiczling*"
+    affiliations:
+      - name: "Department of Biopharmaceutics and Pharmacodynamics, Medical University of Gdańsk, Gen. J. Hallera 107, 80-416 Gdańsk, Poland"
+date: "`r format(Sys.Date())`"
+format:
+  html:
+    theme: cosmo
+    toc: true
+    code-fold: true  
+    code-tools: true
+    fig-width: 7
+    fig-height: 7
+---
+
+```{r setuphtml, include=FALSE}
+knitr::opts_chunk$set(cache=TRUE, message=FALSE, error=FALSE, warning=FALSE, comment=NA, out.width='95%')
+#usethis::create_github_token()
+```
+
+# Setup
+
+The packages we will use are listed below.
+
+```{r setup}
+library(cmdstanr)
+library(pracma)
+library(numDeriv)
+library(dplyr)
+library(ggplot2)
+library(mvtnorm)
+library(tidyr)
+library(purrr)
+library(mrgmisc)
+library(patchwork)
+library(stringr)
+library(reshape2)
+library(here)
+library(tibble)
+library(flextable)
+select = dplyr::select
+# remotes::install_github("metrumresearchgroup/mrgmisc")
+# for parallel calculation use linux (mclaplly), i.e. Ubuntu 24.04 on Windows WSL
+# usethis::edit_r_environ(), add PROCESSX_NOTIFY_OLD_SIGCHLD = 1 ????
+#' Helper functions
+source("helper_functions.R")
+```
+
+```{r paths}
+#' folder shortcuts:
+figures_dir1 <- here("deliv", "figures", "design3","N")
+tables_dir1  <- here("deliv", "tables", "design3","N")
+
+figures_dir5 <- here("deliv", "figures", "manuscript_d3")
+tables_dir5  <- here("deliv", "tables", "manuscript_d3")
+
+if (!file.exists(figures_dir1)) dir.create(figures_dir1, recursive = T)
+if (!file.exists(tables_dir1)) dir.create(tables_dir1, recursive = T)
+if (!file.exists(figures_dir5)) dir.create(figures_dir5, recursive = T)
+if (!file.exists(tables_dir5)) dir.create(tables_dir5, recursive = T)
+
+
+thisScript <- "optimal-design-for-mixtures-design3"
+```
+
+```{r helper-save-functions}
+my.ggsave <- function(.plot, .filename, .path=figures_dir, .height= 7, .width= 6) {
+ggsave(plot=.plot, filename=.filename, path=.path, height=.height, width=.width)
+}
+my.ggsave.png <- function(.plot, .filename, .path=figures_dir, .height=7, .width= 6) {
+ggsave(plot=.plot, filename=.filename, path=.path, height=.height, width=.width)
+}
+```
+
+# Introduction
+
+# Priors
+
+Priors are based on the follwoing article "Comparison of Chromatographic Stationary Phases Using a Bayesian-Based Multilevel Model" by Paweł Wiczling and Agnieszka Kamedulska published in Analytical Chemistry 2024 96 (3), 1310-1319. 
+
+In this work a simplified approach is taken with the focus on the neutral, acidic and basic forms of an analytes and single chromatographic stationary phase - assuming the pKa and changes of pKa with organic modifier are known.
+
+```{r literature-priors}
+# fun_generate_priors defined in helper_functions.R
+priorsN_MeOH=fun_generate_priors("N_MeOH", logP=2.2)
+priorsN_ACN=fun_generate_priors("N_ACN", logP=2.2)
+priorsN=fun_generate_priors("N", logP=2.2)
+priorsA=fun_generate_priors("A", logP=2.2)
+priorsB=fun_generate_priors("B", logP=2.2)
+priorsNB=fun_generate_priors("NB", logP=2.2)
+priorsNA=fun_generate_priors("NA", logP=2.2)
+```
+
+In this work I consider a design region that consist of linear organic modifier gradients ranging from 10 to 270 min and organic modifier content ranging from 0.05 to 0.2 for MeOH and ACN.
+
+```{r design-space}
+hplcparam_candidates_df = expand_grid(tg=seq(10,270,by=10), 
+                                          td=2.1, 
+                                          to=0.532,
+                                          te=0.04, 
+                                          fio = seq(0.05, 0.2, by=0.05),
+                                          fif = 0.8,
+                                          m=c(0,1),
+                                          xpH=c(0,1))
+
+hplcparam_candidates_df<-hplcparam_candidates_df%>%
+  mutate(tg=tg/3/3)
+```
+
+# Stan multiple analytes. Single form analytes. fi and tg for MeOH and ACN as design variables
+
+## Compile stan models
+```{r single-form-analytes-compilation}
+mod_analytes_gq= cmdstan_model("../stan/hplc-gra-single-form-analytes-gq.stan", stanc_options = list("O1"))
+mod_analytes_sim = cmdstan_model("../stan/hplc-gra-single-form-analytes-sim.stan", stanc_options = list("O1"))
+mod_analytes = cmdstan_model("../stan/hplc-gra-single-form-analytes.stan", stanc_options = list("O1"))
+mod_analytes$compile(compile_model_methods=TRUE,force_recompile=TRUE)
+```
+
+## Simulate retention times and create datasets
+
+Probability of occurrence 0.4 neutral, 0.3 A, 0.3 B with logP being sampled from 2.2+-2 and constrained between 0.5 and 7.
+  
+```{r single-form-analytes-simulations}
+data_ma=hplcparam_candidates_df%>%filter(xpH==0)
+nObs = nrow(data_ma);
+nAnalytes =50;
+cseed = 1234;
+n_param = 3;
+n_rep = 10;
+
+datastruct_noprior_ma=list()
+datastruct_prior_ma=list()
+inits = list()
+
+for (i in 1:n_rep) {
+datastruct_prior_ma[[i]] = list(nObs=nObs,
+                   nAnalytes=nAnalytes,
+                   steps = 4 + 6*data_ma$m,
+                   hplcparam=as.matrix(data_ma%>%dplyr::select(c(tg,td,to,te,fio,fif,m))),
+                   include_prior = 1,
+                   run_estimation=1,
+                   nSel = nObs,
+                   selected = 1:nObs)
+
+fit_gq  = mod_analytes_gq$sample(data = datastruct_prior_ma[[i]],
+                                         seed = cseed,
+                                         fixed_param = TRUE,
+                                         chains = 1,
+                                         iter_sampling=1)
+
+datastruct_prior_ma[[i]]$trobs = matrix(fit_gq$draws(format = "matrix", variable = "y_hat_sim"),nAnalytes,nObs)
+datastruct_prior_ma[[i]]$logPobs = fit_gq$draws(format = "matrix", variable = "logPobs")[1:nAnalytes]
+datastruct_prior_ma[[i]]$N1A2B3 = fit_gq$draws(format = "matrix", variable = "N1A2B3")[1:nAnalytes]
+param = matrix(fit_gq$draws(format = "matrix", variable = "paramsim"),nAnalytes,3)
+
+
+datastruct_noprior_ma[[i]]=datastruct_prior_ma[[i]];
+datastruct_noprior_ma[[i]]$include_prior = 0.01;
+
+inits[[i]]=param
+
+cseed = cseed+1
+}
+
+mean_log_det_stan = function(data, init, chosen_indices, S){
+  
+init_ma = function(){list(param=init)}
+  
+data$selected = chosen_indices;
+data$nSel = length(chosen_indices);
+
+ fit_opt  = mod_analytes$optimize(
+   data = data,
+   output_dir = here::here("stanfiles"),
+   output_basename = S,
+   seed = cseed,
+   init = init_ma,
+   jacobian = TRUE,
+   show_messages = F)
+ 
+ mode=fit_opt$unconstrain_variables(list(param = fit_opt$mle("param")))
+ hessian = fit_opt$hessian(unconstrained_variables = mode)$hessian
+
+logdet = unlist(purrr::map(1:data$nAnalytes,\(i) log(det(-hessian[((i-1)*3+1):((i-1)*3+3),((i-1)*3+1):((i-1)*3+3)]))))
+
+return(logdet)
+}
+
+chosen_indices = c(65,66,209,210)
+
+# quick test:
+z_prior = parallel::mclapply(1:n_rep,\(i) mean_log_det_stan(datastruct_prior_ma[[i]], inits[[i]], chosen_indices, i), mc.cores=10)
+z_noprior = parallel::mclapply(1:n_rep,\(i) mean_log_det_stan(datastruct_noprior_ma[[i]], inits[[i]], chosen_indices, i), mc.cores=10)
+test = c(mean(unlist(z_prior)),mean(unlist(z_noprior)))
+test
+
+
+logP = unlist(purrr::map(1:length(datastruct_noprior_ma),\(i) datastruct_noprior_ma[[i]]$logPobs))
+NAB = unlist(purrr::map(1:length(datastruct_noprior_ma),\(i) datastruct_noprior_ma[[i]]$N1A2B3))
+```
+
+## Optimization
+```{r single-form-analytes-optimization, eval=F}
+chosen_indices = c(213,214) # initial values
+fws_prior_2 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma, inits, chosen_indices, n_iter = 100)
+
+chosen_indices = c(214,209,215) # initial values
+fws_prior_3 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma, inits, chosen_indices, n_iter = 100)
+chosen_indices = c(214,211,63) # initial values
+fws_noprior_3 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma, inits, chosen_indices, n_iter = 100)
+
+chosen_indices = c(209,210,215,79) # initial values
+fws_prior_4 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma, inits, chosen_indices, n_iter = 100)
+chosen_indices = c(209,210,215,71) # initial values
+fws_noprior_4 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma, inits, chosen_indices, n_iter = 100)
+
+chosen_indices = c(210,209,212,215,79) # initial values
+fws_prior_5 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma, inits, chosen_indices, n_iter = 100)
+chosen_indices = c(210,209,212,215,71) # initial values
+fws_noprior_5 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma, inits, chosen_indices, n_iter = 100)
+
+chosen_indices_prior = c(65,66,209,210) # ref
+chosen_indices_noprior= c(65,66,209,210) # ref
+fws_prior_ref = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma, inits, chosen_indices_prior, n_iter = 0)
+fws_noprior_ref = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma, inits, chosen_indices_noprior, n_iter = 0)
+
+```
+
+### Read the results and compare
+
+```{r single-form-analytes-logDet-read, eval=T}
+chosen_indices_prior = c(65,66,209,210) # ref
+chosen_indices_noprior= c(65,66,209,210) # ref
+fws_prior_ref = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma, inits, chosen_indices_prior, n_iter = 0)
+fws_noprior_ref = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma, inits, chosen_indices_noprior, n_iter = 0)
+
+chosen_indices_prior   = c(213,214) # p=2
+fws_prior_2 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma, inits, chosen_indices_prior, n_iter = 0)
+
+chosen_indices_prior   = c(214,209,215) # p=3
+chosen_indices_noprior = c(214,211,63) # p=3
+fws_prior_3 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma, inits, chosen_indices_prior, n_iter = 0)
+fws_noprior_3 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma, inits, chosen_indices_noprior, n_iter = 0)
+
+chosen_indices_prior   = c(209,212,215,216) # p=4
+chosen_indices_noprior = c(209,214,215,63) # p=4
+fws_prior_4 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma, inits, chosen_indices_prior, n_iter = 0)
+fws_noprior_4 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma, inits, chosen_indices_noprior, n_iter = 0)
+
+chosen_indices_prior = c(207,209,212,215,216) # p=5
+chosen_indices_noprior = c(216,209,212,215,63) # p=5
+fws_prior_5 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma, inits, chosen_indices_prior, n_iter = 0)
+fws_noprior_5 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma, inits, chosen_indices_noprior, n_iter = 0)
+```
+
+```{r single-form-analytes-logDet-summary}
+summary_results = tibble( logP = logP,
+                          Type = NAB,
+                          prior_ref = fws_prior_ref$log_det_FIM,
+                          noprior_ref = fws_noprior_ref$log_det_FIM,
+                          prior_2 = fws_prior_2$log_det_FIM,
+                          prior_3 = fws_prior_3$log_det_FIM,
+                          noprior_3 = fws_noprior_3$log_det_FIM,
+                          prior_4 = fws_prior_4$log_det_FIM,
+                          noprior_4 = fws_noprior_4$log_det_FIM,
+                          prior_5 = fws_prior_5$log_det_FIM,
+                          noprior_5 = fws_noprior_5$log_det_FIM) %>%
+  pivot_longer(prior_ref:noprior_5, names_to = "method")
+
+p1<-ggplot(summary_results, aes(y=method,x=value))+
+  geom_boxplot(outlier.size = 0.5)+
+  geom_jitter(aes(y=method, x=value, color=logP),size=0.5, alpha=0.1)+
+  scale_color_continuous(type="viridis")+
+  labs(x="log(|FIM|)", y = "Method")
+p1
+summary_results_diff = tibble(logP = logP,
+                          Type = NAB,
+                          fws_prior_ref = fws_prior_ref$log_det_FIM,
+                          fws_noprior_ref = fws_noprior_ref$log_det_FIM,
+                          fws_prior_2 = fws_prior_2$log_det_FIM,
+                          fws_prior_3 = fws_prior_3$log_det_FIM,
+                          fws_noprior_3 = fws_noprior_3$log_det_FIM,
+                          fws_prior_4 = fws_prior_4$log_det_FIM,
+                          fws_noprior_4 = fws_noprior_4$log_det_FIM,
+                          fws_prior_5 = fws_prior_5$log_det_FIM,
+                          fws_noprior_5 = fws_noprior_5$log_det_FIM) %>%
+  mutate(d_prior_2 = (fws_prior_2 - fws_prior_ref)/n_param,
+         d_prior_3 = (fws_prior_3 - fws_prior_ref)/n_param,
+         d_noprior_3 = (fws_noprior_3 - fws_noprior_ref)/n_param,
+         d_prior_4 = (fws_prior_4 - fws_prior_ref)/n_param,
+         d_noprior_4 = (fws_noprior_4 - fws_noprior_ref)/n_param,
+         d_prior_5 = (fws_prior_5 - fws_prior_ref)/n_param,
+         d_noprior_5 = (fws_noprior_5 - fws_noprior_ref)/n_param)%>%
+  pivot_longer(d_prior_2:d_noprior_5, names_to = "method")
+
+p2=ggplot(summary_results_diff, aes(y=method,x=exp(value)))+
+  geom_boxplot(outlier.size = 0.5)+
+  geom_jitter(aes(y=method, x=exp(value), color=logP),size=0.5, alpha=0.1)+
+  scale_color_continuous(type="viridis")+
+  labs(x="Efficiency relative to the reference design", y = "Method")+
+  geom_vline(xintercept = 1, linetype = "dotted")
+
+summary_results_diffprior = tibble(logP = logP,
+                          Type = NAB,
+                          fws_prior_ref = fws_prior_ref$log_det_FIM,
+                          fws_noprior_ref = fws_noprior_ref$log_det_FIM,
+                          fws_prior_3 = fws_prior_3$log_det_FIM,
+                          fws_noprior_3 = fws_noprior_3$log_det_FIM,
+                          fws_prior_4 = fws_prior_4$log_det_FIM,
+                          fws_noprior_4 = fws_noprior_4$log_det_FIM,
+                          fws_prior_5 = fws_prior_5$log_det_FIM,
+                          fws_noprior_5 = fws_noprior_5$log_det_FIM) %>%
+  mutate(d_ref  = (fws_prior_ref-fws_noprior_ref)/n_param,
+         d_3 = (fws_prior_3-fws_noprior_3)/n_param,
+         d_4 = (fws_prior_4-fws_noprior_4)/n_param,
+         d_5 = (fws_prior_5-fws_noprior_5)/n_param)%>%
+  pivot_longer(d_ref:d_5, names_to = "method")
+
+p3=ggplot(summary_results_diffprior, aes(y=method,x=exp(value)))+
+  geom_boxplot(outlier.size = 0.5)+
+  geom_jitter(aes(y=method, x=exp(value), color=logP),size=0.5, alpha=0.1)+
+  scale_color_continuous(type="viridis")+
+  labs(x="Effect of prior on design efficiency", y = "Method")+
+  geom_vline(xintercept = 1, linetype = "dotted")+
+  scale_x_continuous(limits = c(0.5,100),
+                     trans='log10',
+                      breaks=scales::trans_breaks('log10', function(x) 10^x)(c(0.01, 100)),
+                      labels=scales::trans_format('log10', scales::math_format(10^.x)))
+
+
+p1
+p2
+p3
+
+f2_1 = p2
+f3_1 = p3
+my.ggsave(.plot=p1, .filename=paste("single-form-analytes-logdFIM-abs.pdf"), .path = figures_dir1)
+my.ggsave.png(.plot=p1, .filename=paste("single-form-analytes-logdFIM-abs.png"), .path = figures_dir1)
+my.ggsave(.plot=p2, .filename=paste("single-form-analytes-logdFIM-rel.pdf"), .path = figures_dir1)
+my.ggsave.png(.plot=p2, .filename=paste("single-form-analytes-logdFIM-rel.png"), .path = figures_dir1)
+my.ggsave(.plot=p3, .filename=paste("single-form-analytes-logdFIM-prioreff.pdf"), .path = figures_dir1)
+my.ggsave.png(.plot=p3, .filename=paste("single-form-analytes-logdFIM-prioreff.png"), .path = figures_dir1)
+```
+#### Table Summary
+```{r table-single}
+tab1=summary_results_diff %>% 
+  mutate(value = exp(value)) %>%
+  group_by(method) %>% 
+  summarise(ptc_value = quantile(value, c(0.05, 0.5, 0.95)), q = c(0.05, 0.5, 0.95),
+            mean_value = mean(value),
+            sd_value = std(value)) %>%
+  ungroup() %>%
+  mutate(across(c('ptc_value', 'mean_value','sd_value'), round, 2))%>%
+  pivot_wider(names_from = "q", values_from = ptc_value, names_prefix = "q")%>%
+  mutate(`Efficiency median (5th-95th)` = paste0(q0.5, " (", q0.05, " - ", q0.95, ")"))%>%
+  mutate(`Efficiency mean (sd)` = paste0(mean_value, " (", sd_value , ")"))%>%
+  select(-starts_with("q"))%>%
+  select(-mean_value, -sd_value)%>%
+  flextable() %>%
+  autofit()
+
+tab1
+
+tab2=summary_results_diffprior %>% 
+  mutate(value = exp(value)) %>%
+  group_by(method) %>% 
+  summarise(ptc_value = quantile(value, c(0.05, 0.5, 0.95)), q = c(0.05, 0.5, 0.95),
+            mean_value = mean(value),
+            sd_value = std(value)) %>%
+  ungroup() %>%
+  mutate(across(c('ptc_value', 'mean_value','sd_value'), round, 2))%>%
+  pivot_wider(names_from = "q", values_from = ptc_value, names_prefix = "q")%>%
+  mutate(`Efficiency median (5th-95th)` = paste0(q0.5, " (", q0.05, " - ", q0.95, ")"))%>%
+  mutate(`Efficiency mean (sd)` = paste0(mean_value, " (", sd_value , ")"))%>%
+  select(-starts_with("q"))%>%
+  select(-mean_value, -sd_value)%>%
+  flextable() %>%
+  autofit()
+
+tab2
+```
+
+### Table
+```{r single-form-table}
+data_ma=hplcparam_candidates_df%>%filter(xpH==0)%>%
+  mutate(line=1:n())
+
+combined_results = list(
+prior_ref = fws_prior_ref$chosen_indices,
+noprior_ref = fws_noprior_ref$chosen_indices,
+prior_2 = fws_prior_2$chosen_indices,
+noprior_2 = 10000+fws_prior_2$chosen_indices, # dummy
+prior_3 = fws_prior_3$chosen_indices,
+noprior_3 = fws_noprior_3$chosen_indices,
+prior_4 = fws_prior_4$chosen_indices,
+noprior_4 = fws_noprior_4$chosen_indices,
+prior_5 = fws_prior_5$chosen_indices,
+noprior_5 = fws_noprior_5$chosen_indices)
+
+selected_exp = enframe(combined_results)%>%
+   unnest(value) %>%
+  rename(line=value, Name = name) %>%
+  left_join(data_ma, by = "line")%>%
+   arrange(Name,tg, fio)%>%
+  mutate(Modifier = if_else(m==0, "MeOH", "ACN")) %>%
+  select(-c(line,xpH,m,td,to,te,fif)) %>%
+  mutate(type = if_else(str_detect(Name, 'noprior'), "No prior", "Prior"))%>%
+  mutate(across(where(is.numeric), ~replace_na(., -1)))
+
+tab1<-selected_exp %>%
+  filter(type == "Prior") %>%
+  select(-type)%>%
+  as_grouped_data(groups = "Name") %>%
+  flextable() 
+  
+tab2<-selected_exp %>%
+  filter(type == "No prior")%>%
+    select(-type)%>%
+  as_grouped_data(groups = "Name") %>%
+  flextable() 
+
+tab2 <- set_formatter(
+  tab2, 
+  tg = function(x) ifelse(x==-1," ", sprintf("%.0f", x) ),
+  fio = function(x) ifelse(x==-1," ", sprintf("%.2f", x) )
+  )
+
+p1 = gen_grob(tab1, fit = "auto", just = "centre")
+p2 = gen_grob(tab2, fit = "auto", just = "centre") 
+
+gg<-ggplot()+
+       theme(
+         panel.background = element_rect(fill='transparent'),
+         plot.background = element_rect(fill='transparent', color=NA),
+         panel.grid.major = element_blank(),
+         panel.grid.minor = element_blank(),
+         legend.background = element_rect(fill='transparent'),
+         legend.box.background = element_rect(fill='transparent')
+       )
+
+plot1 <- gg+p1+p2+ plot_layout(ncol = 3, widths = c(1, 20,20))
+
+my.ggsave(.plot=plot1, .filename=paste("single-form-analytes-table.pdf"), .path = tables_dir1)
+my.ggsave.png(.plot=plot1, .filename=paste("single-form-analytes-table.png"), .path = tables_dir1)
+
+tab1
+tab2
+```
+
+## Stan simulations
+```{r single-form-analytes-laplace, eval=T}
+chosen_indices = fws_prior_ref$chosen_indices # ref
+prior_ma_ref = fun_predict_stan_results(mod_analytes_sim, datastruct_prior_ma, inits, chosen_indices, 10) 
+
+chosen_indices = fws_noprior_ref$chosen_indices # ref
+noprior_ma_ref = fun_predict_stan_results(mod_analytes_sim, datastruct_noprior_ma, inits, chosen_indices, 10) 
+
+chosen_indices = fws_prior_2$chosen_indices # p=2
+prior_ma_2 = fun_predict_stan_results(mod_analytes_sim, datastruct_prior_ma, inits, chosen_indices, 10) 
+
+chosen_indices = fws_prior_3$chosen_indices # p=3
+prior_ma_3 = fun_predict_stan_results(mod_analytes_sim, datastruct_prior_ma, inits, chosen_indices, 10) 
+
+chosen_indices = fws_noprior_3$chosen_indices # p=3
+noprior_ma_3 = fun_predict_stan_results(mod_analytes_sim, datastruct_noprior_ma, inits, chosen_indices, 10) 
+
+chosen_indices = fws_prior_4$chosen_indices # p=4
+prior_ma_4 = fun_predict_stan_results(mod_analytes_sim, datastruct_prior_ma, inits, chosen_indices, 10) 
+
+chosen_indices = fws_noprior_4$chosen_indices # p=4
+noprior_ma_4 = fun_predict_stan_results(mod_analytes_sim, datastruct_noprior_ma, inits, chosen_indices, 10) 
+
+chosen_indices = fws_prior_5$chosen_indices # p=5
+prior_ma_5 = fun_predict_stan_results(mod_analytes_sim, datastruct_prior_ma, inits, chosen_indices, 10) 
+
+chosen_indices = fws_noprior_5$chosen_indices # p=5
+noprior_ma_5 = fun_predict_stan_results(mod_analytes_sim, datastruct_noprior_ma, inits, chosen_indices, 10) 
+
+```
+
+#### Gradient conditions
+```{r single-form-analytes-gra-summary}
+chosen_indices = fws_prior_5$chosen_indices # p=5
+p31=hplcparam_candidates_df %>%
+  filter(xpH==0)%>%
+  mutate(lines = row_number())%>%
+  left_join(prior_ma_5$cresults%>%mutate(lines=as.integer(c))) %>%
+  mutate(selected = factor(if_else(lines %in% chosen_indices,1,0))) %>%
+  mutate(m_f = if_else(m==0, "MeOH", "ACN")) %>%
+  ggplot(aes(x=tg, y=fio, z=qvar)) +
+  geom_contour_filled()+
+  geom_point(data = . %>% filter(selected==1))+
+  facet_wrap(~m_f)
+chosen_indices = fws_noprior_5$chosen_indices # p=5
+p32=hplcparam_candidates_df %>%
+  filter(xpH==0)%>%
+  mutate(lines = row_number())%>%
+  left_join(noprior_ma_5$cresults%>%mutate(lines=as.integer(c))) %>%
+  mutate(selected = factor(if_else(lines %in% chosen_indices,1,0))) %>%
+  mutate(m_f = if_else(m==0, "MeOH", "ACN")) %>%
+  ggplot(aes(x=tg, y=fio, z=qvar)) +
+  geom_contour_filled()+
+  geom_point(data = . %>% filter(selected==1))+
+  facet_wrap(~m_f)
+
+iresults = rbind(prior_ma_ref$iresults%>%
+                   mutate(method ="prior_ref"),
+                 noprior_ma_ref$iresults%>%
+                   mutate(method ="noprior_ref"),
+                prior_ma_2$iresults%>%
+                   mutate(method ="prior_2"),
+                 prior_ma_3$iresults%>%
+                   mutate(method ="prior_3"),
+                 noprior_ma_3$iresults%>%
+                   mutate(method ="noprior_3"),
+                 prior_ma_4$iresults%>%
+                   mutate(method ="prior_4"),
+                 noprior_ma_4$iresults%>%
+                   mutate(method ="noprior_4"),
+                 prior_ma_5$iresults%>%
+                   mutate(method ="prior_5"),
+                 noprior_ma_5$iresults%>%
+                   mutate(method ="noprior_5"))%>%
+  mutate(ivar = if_else(ivar>1e6,1e6,ivar)) %>%
+  left_join(tibble(i=as.factor(seq(1,nAnalytes*n_rep,1)),logP=logP, Type=NAB))
+
+
+p33_1=iresults %>%
+  ggplot(aes(y=method,x=ivar))+
+  geom_boxplot(outlier.size = 0.5)+
+  geom_jitter(aes(y=method, x=ivar, color=logP),size=0.5, alpha=0.1)+
+    scale_color_continuous(type="viridis")+
+  labs(x="max(Var)", y = "Method")+
+  geom_vline(xintercept = 1, linetype="dotted")+
+  coord_cartesian(xlim=c(0.1,100))+   
+  scale_x_continuous(trans='log10',
+                      breaks=scales::trans_breaks('log10', function(x) 10^x)(c(0.1, 1e6)),
+                      labels=scales::trans_format('log10', scales::math_format(10^.x)))
+p33_2=iresults %>%
+  ggplot(aes(y=method,x=ivar))+
+  geom_boxplot(outlier.size = 0.5)+
+  geom_jitter(aes(y=method, x=ivar, color=logP),size=0.5, alpha=0.1)+
+    scale_color_continuous(type="viridis")+
+  labs(x="max(Var)", y = "Method")+
+  geom_vline(xintercept = 1, linetype="dotted")+
+  coord_cartesian(xlim=c(100,1000000))+    
+  scale_x_continuous(trans='log10',
+                      breaks=scales::trans_breaks('log10', function(x) 10^x)(c(0.1, 1e6)),
+                      labels=scales::trans_format('log10', scales::math_format(10^.x)))
+
+p33=p33_1+p33_2+
+  plot_layout(widths = c(3, 1),axes = "collect")
+
+
+idx_exemple_analytes = iresults %>%
+  filter(method=="prior_ref") %>%
+  arrange(ivar)%>%
+  slice(which(row_number() %% 100 == 1)) %>%
+  select(i)%>%pull()
+
+iresults %>%
+  group_by(method) %>%
+  summarise(`<=1x` = mean(ivar<=1),
+  `<=2x` = mean(ivar<=2),
+  `<=3x` = mean(ivar<=3)) %>%
+  flextable() 
+
+f55_1=iresults %>%
+  group_by(method) %>%
+  summarise(`<=1x` = mean(ivar<=1),
+  `<=2x` = mean(ivar<=2),
+  `<=3x` = mean(ivar<=3)) %>%
+  pivot_longer(`<=1x`:`<=3x`, names_to = "target") %>%
+  ggplot(aes(y=method,x=value,color=as.factor(target)))+
+  geom_point()+
+  labs(x="Probability", y = "Method", color = "target")+
+  geom_vline(xintercept = 0.9, linetype="dotted")
+
+my.ggsave(.plot=f55_1, .filename=paste("single-form-analytes-gra-prob.pdf"), .path = figures_dir1)
+my.ggsave.png(.plot=f55_1, .filename=paste("single-form-analytes-gra-prob.png"), .path = figures_dir1)
+my.ggsave(.plot=p31, .filename=paste("single-form-analytes-gra-prior-p5.pdf"), .path = figures_dir1)
+my.ggsave.png(.plot=p31, .filename=paste("single-form-analytes-gra-prior-p5.png"), .path = figures_dir1)
+my.ggsave(.plot=p32, .filename=paste("single-form-analytes-gra-noprior-p5.pdf"), .path = figures_dir1)
+my.ggsave.png(.plot=p32, .filename=paste("single-form-analytes-gra-noprior-p5.png"), .path = figures_dir1)
+my.ggsave(.plot=p33+plot_layout(guides = "collect"), .filename=paste("single-form-analytes-gra-maxvar.pdf"), .path = figures_dir1)
+my.ggsave.png(.plot=p33+plot_layout(guides = "collect"), .filename=paste("single-form-analytes-gra-maxvar.png"), .path = figures_dir1)
+
+p31
+p32
+p33
+f33_1=p33
+f55_1
+```
+
+#### Isocratic conditions
+##### Individual plots
+```{r single-form-analytes-izo-summary}
+fi_temp = tibble(c=1:11, fi=seq(0,1,by=0.1))
+
+plot_id = function(results) { 
+  results %>%
+  ggplot(aes(x=fi, y=CV/10)) +
+  geom_line()+
+  geom_ribbon(aes(x=fi, ymin = llog10tr, ymax = ulog10tr), alpha = 0.4, col = NA) +
+  geom_line(aes(x=fi, y=mlog10tr), col = "black", size=0.25) +
+     scale_y_continuous(
+    name = "log(tr)",
+    sec.axis = sec_axis(~.*10, name="%CV")) +
+  scale_x_continuous(breaks = seq(0,1,by=0.2))+
+  facet_grid(i~mod) +
+  geom_hline(yintercept = 1, linetype=2)+
+  coord_cartesian(ylim=c(0,4))
+}
+
+results_prior_ma_ref<-prior_ma_ref$izoresults%>%
+  mutate(c=as.integer(c),
+         i=as.integer(i)) %>%
+    left_join(fi_temp) %>%
+    filter(i %in% idx_exemple_analytes) %>%
+  mutate(PLOTS = ids_per_plot(i,id_per_plot = 5))%>% 
+  split(.[["PLOTS"]])
+
+results_noprior_ma_ref<-noprior_ma_ref$izoresults%>%
+  mutate(c=as.integer(c),
+         i=as.integer(i)) %>%
+    left_join(fi_temp) %>%
+    filter(i %in% idx_exemple_analytes) %>%
+  mutate(PLOTS = ids_per_plot(i,id_per_plot = 5))%>% 
+  split(.[["PLOTS"]])
+
+results_prior_ma_2<-prior_ma_2$izoresults%>%
+  mutate(c=as.integer(c),
+         i=as.integer(i)) %>%
+    left_join(fi_temp) %>%
+    filter(i %in% idx_exemple_analytes) %>%
+  mutate(PLOTS = ids_per_plot(i,id_per_plot = 5))%>% 
+  split(.[["PLOTS"]])
+
+results_prior_ma_3<-prior_ma_3$izoresults%>%
+  mutate(c=as.integer(c),
+         i=as.integer(i)) %>%
+    left_join(fi_temp) %>%
+    filter(i %in% idx_exemple_analytes) %>%
+  mutate(PLOTS = mrgmisc::ids_per_plot(i,id_per_plot = 5))%>% 
+  split(.[["PLOTS"]])
+results_noprior_ma_3<-noprior_ma_3$izoresults%>%
+  mutate(c=as.integer(c),
+         i=as.integer(i)) %>%
+    left_join(fi_temp) %>%
+    filter(i %in% idx_exemple_analytes) %>%
+  mutate(PLOTS = ids_per_plot(i,id_per_plot = 5))%>% 
+  split(.[["PLOTS"]])
+
+results_prior_ma_4<-prior_ma_4$izoresults%>%
+  mutate(c=as.integer(c),
+         i=as.integer(i)) %>%
+    left_join(fi_temp) %>%
+    filter(i %in% idx_exemple_analytes) %>%
+  mutate(PLOTS = ids_per_plot(i,id_per_plot = 5))%>% 
+  split(.[["PLOTS"]])
+results_noprior_ma_4<-noprior_ma_4$izoresults%>%
+  mutate(c=as.integer(c),
+         i=as.integer(i)) %>%
+    left_join(fi_temp) %>%
+    filter(i %in% idx_exemple_analytes) %>%
+  mutate(PLOTS = ids_per_plot(i,id_per_plot = 5))%>% 
+  split(.[["PLOTS"]])
+
+results_prior_ma_5<-prior_ma_5$izoresults%>%
+  mutate(c=as.integer(c),
+         i=as.integer(i)) %>%
+    left_join(fi_temp) %>%
+    filter(i %in% idx_exemple_analytes) %>%
+  mutate(PLOTS = ids_per_plot(i,id_per_plot = 5))%>% 
+  split(.[["PLOTS"]])
+results_noprior_ma_5<-noprior_ma_5$izoresults%>%
+  mutate(c=as.integer(c),
+         i=as.integer(i)) %>%
+    left_join(fi_temp) %>%
+    filter(i %in% idx_exemple_analytes) %>%
+  mutate(PLOTS = ids_per_plot(i,id_per_plot = 5))%>% 
+  split(.[["PLOTS"]])
+
+plots_results_prior_ma_ref = map(results_prior_ma_ref,plot_id) 
+plots_results_noprior_ma_ref = map(results_noprior_ma_ref,plot_id) 
+plots_results_prior_ma_2 = map(results_prior_ma_2,plot_id) 
+plots_results_prior_ma_3 = map(results_prior_ma_3,plot_id) 
+plots_results_noprior_ma_3 = map(results_noprior_ma_3,plot_id) 
+plots_results_prior_ma_4 = map(results_prior_ma_4,plot_id) 
+plots_results_noprior_ma_4 = map(results_noprior_ma_4,plot_id) 
+plots_results_prior_ma_5 = map(results_prior_ma_5,plot_id) 
+plots_results_noprior_ma_5 = map(results_noprior_ma_5,plot_id) 
+
+my.ggsave(.plot=plots_results_prior_ma_ref[[1]], .filename=paste("plots-results-prior-ma-ref.pdf"), .path = figures_dir1)
+my.ggsave.png(.plot=plots_results_prior_ma_ref[[1]], .filename=paste("plots-results-prior-ma-ref.png"), .path = figures_dir1)
+my.ggsave(.plot=plots_results_prior_ma_5[[1]], .filename=paste("plots-results-prior-ma-5.pdf"), .path = figures_dir1)
+my.ggsave.png(.plot=plots_results_prior_ma_5[[1]], .filename=paste("plots-results-prior-ma-5.png"), .path = figures_dir1)
+
+plots_results_prior_ma_ref 
+plots_results_noprior_ma_ref 
+plots_results_prior_ma_2
+plots_results_prior_ma_3
+plots_results_noprior_ma_3 
+plots_results_prior_ma_4 
+plots_results_noprior_ma_4 
+plots_results_prior_ma_5  
+plots_results_noprior_ma_5 
+
+# map(show, function(i) plots_results_prior_ma_ref[[i]])
+# map(show, function(i) plots_results_noprior_ma_ref[[i]])
+# map(show, function(i) plots_results_prior_ma_4[[i]])
+# map(show, function(i) plots_results_noprior_ma_4[[i]])
+# map(show, function(i) plots_results_prior_ma_5[[i]])
+# map(show, function(i) plots_results_noprior_ma_5[[i]])
+```
+
+##### Combined
+```{r single-form-analytes-izo-summary-combined}
+fi_temp = tibble(c=1:11, fi=seq(0,1,by=0.1))
+
+plot_id = function(results) { 
+  results %>%
+  ggplot(aes(x=fi, y=CV)) +
+  geom_line()+
+  geom_ribbon(aes(x=fi, ymin = llog10tr, ymax = ulog10tr), alpha = 0.4, col = NA) +
+  geom_line(aes(x=fi, y=mlog10tr), col = "black", size=0.25) +
+     scale_y_continuous(
+    name = "log(tr)",
+    sec.axis = sec_axis(~.*1, name="%CV")) +
+  scale_x_continuous(breaks = seq(0,1,by=0.2))+
+  facet_grid(i~mod) +
+  geom_hline(yintercept = 1, linetype=2)+
+  coord_cartesian(ylim=c(0,4))
+}
+
+izoresults = rbind( prior_ma_ref$izoresults%>%
+                   mutate(method ="prior_ref"),
+                 noprior_ma_ref$izoresults%>%
+                   mutate(method ="noprior_ref"),
+                prior_ma_2$izoresults%>%
+                   mutate(method ="prior_2"),
+                 prior_ma_3$izoresults%>%
+                   mutate(method ="prior_3"),
+                 noprior_ma_3$izoresults%>%
+                   mutate(method ="noprior_3"),
+                 prior_ma_4$izoresults%>%
+                   mutate(method ="prior_4"),
+                 noprior_ma_4$izoresults%>%
+                   mutate(method ="noprior_4"),
+                 prior_ma_5$izoresults%>%
+                   mutate(method ="prior_5"),
+                 noprior_ma_5$izoresults%>%
+                   mutate(method ="noprior_5")) %>%
+  filter(mlog10tr<=log10(100))%>%
+  filter(mlog10tr>=log10(5))%>%
+  mutate(c = as.numeric(c),
+         i=as.integer(i)) %>%
+  arrange(i,method,c)%>%
+  group_by(i,method) %>%
+  summarise(imaxcv = max(CV), imincv = min(CV), aveCV = pracma::trapz(c, CV)/(n()-1)) %>%
+  mutate(imaxcv = if_else(imaxcv>1e4,1e4,imaxcv))%>%
+  left_join(tibble(i=as.integer(seq(1,nAnalytes*n_rep,1)),logP=logP, Type=NAB)) 
+ 
+p33_1=izoresults %>%
+  ggplot(aes(y=method,x=imaxcv))+
+  geom_boxplot(outlier.size = 0.5)+
+  geom_jitter(aes(y=method, x=imaxcv, color=logP),size=0.5, alpha=0.1)+
+  geom_boxplot(aes(y=method,x=imincv),outlier.size = 0, color="lightblue", alpha=0.1)+
+    scale_color_continuous(type="viridis")+
+  labs(x="min(CV), max(CV)", y = "Method")+
+  
+  coord_cartesian(xlim=c(1,100))+   
+  scale_x_continuous(trans='log10',
+                      breaks=scales::trans_breaks('log10', function(x) 10^x)(c(1, 1e6)),
+                      labels=scales::trans_format('log10', scales::math_format(10^.x)))
+
+p33_2=izoresults %>%
+  ggplot(aes(y=method,x=imaxcv))+
+  geom_boxplot(outlier.size = 0.5)+
+  geom_jitter(aes(y=method, x=imaxcv, color=logP),size=0.5, alpha=0.1)+
+  geom_boxplot(aes(y=method,x=imincv),outlier.size = 0, color="lightblue", alpha=0.1)+
+    scale_color_continuous(type="viridis")+
+  labs(x="min(CV), max(CV)", y = "Method")+
+   
+  coord_cartesian(xlim=c(100,10000))+    
+  scale_x_continuous(trans='log10',
+                      breaks=scales::trans_breaks('log10', function(x) 10^x)(c(1, 1e6)),
+                      labels=scales::trans_format('log10', scales::math_format(10^.x)))
+
+p33=p33_1+p33_2+
+  plot_layout(widths = c(3, 1),axes = "collect")
+
+my.ggsave(.plot=p33+plot_layout(guides = "collect"), .filename=paste("N-izo-combined-CV.pdf"), .path = figures_dir1)
+my.ggsave.png(.plot=p33+plot_layout(guides = "collect"), .filename=paste("N-izo-combined-CV.png"), .path = figures_dir1)
+
+p33
+f44_1 = p33
+```
+
+
+# References {.unnumbered}
+
+::: {#refs}
+:::
+
+# Licenses {.unnumbered}
+
+-   Code & copy; 2024, Paweł Wiczling, licensed under BSD-3.
+-   Text & copy; 2024, Paweł Wiczling, licensed under CC-BY-NC 4.0.
+
+# Original Computing Environment {.unnumbered}
+
+```{r sessionInfo}
+sessionInfo()
+```
