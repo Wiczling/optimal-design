@@ -17,7 +17,6 @@ format:
 
 ```{r setuphtml, include=FALSE}
 knitr::opts_chunk$set(cache=TRUE, message=FALSE, error=FALSE, warning=FALSE, comment=NA, out.width='95%')
-#usethis::create_github_token()
 ```
 
 # Setup
@@ -65,10 +64,7 @@ ggsave(plot=.plot, filename=.filename, path=.path, height=.height, width=.width)
 ```
 
 # Introduction
-
 # Priors
-Priors are based on the following article "Comparison of Chromatographic Stationary Phases Using a Bayesian-Based Multilevel Model" by Paweł Wiczling and Agnieszka Kamedulska published in Analytical Chemistry 2024 96 (3), 1310-1319. In this work a simplified approach is taken with the focus on the neutral, acidic and basic forms of analytes and a single chromatographic stationary phase (Xbridge), assuming the pKa and changes of pKa with organic modifier are known.
-
 ```{r literature-priors}
 # fun_generate_priors defined in helper_functions.R
 priorsN_MeOH=fun_generate_priors("N_MeOH", logP=2.2)
@@ -81,7 +77,6 @@ priorsNA=fun_generate_priors("NA", logP=2.2)
 ```
 
 # Stan multiple analytes. Single form analytes. fi and tg for MeOH and ACN as design variables
-
 # Compile stan models
 ```{r single-form-analytes-compilation}
 mod_analytes_gq= cmdstan_model("../stan/hplc-gra-single-form-analytes-gq.stan", stanc_options = list("O1"))
@@ -89,7 +84,6 @@ mod_analytes_sim = cmdstan_model("../stan/hplc-gra-single-form-analytes-sim-v2.s
 mod_analytes = cmdstan_model("../stan/hplc-gra-single-form-analytes.stan", stanc_options = list("O1"))
 mod_analytes$compile(compile_model_methods=TRUE,force_recompile=TRUE)
 ```
-
 
 ```{r fun-helpers}
 # to avoid recalculations
@@ -119,13 +113,8 @@ return(logdet)
 ```
 
 # Simulation
-
-The simulation involved n = 500 analytes with log P and analyte type (acid and base) drawn at random from the following distributions:  $logP_i \sim normal(2,2.2)$ and $Analyte_i \sim categorical(A=0.5,B=0.5)$. Log P values were truncated within 0.5 and 7. For signle pH scenarios the analyte form distribution was 40% for neutral, 30% for acidic, and 30% for basic form. 
-  
 ```{r single-form-analytes-simfun}
-
 max_var_gra_tg <- function(fr_tg=1){
-  
 hplcparam_candidates_df = expand_grid(tg=seq(10,270,by=10), 
                                           td=2.1, 
                                           to=0.532,

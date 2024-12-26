@@ -249,22 +249,7 @@ chosen_indices = c(210,209,212,215,71) # initial values
 fws_noprior_5 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma, inits, chosen_indices, n_iter = 100)
 ```
 
-## Optimization tg constrained
-```{r single-form-analytes-optimization-tgconstrain, eval=FALSE}
-#p=2 and 3 are the same as for unconstrained
-chosen_indices = c(209,210,118,87) # initial values
-fwstgc_prior_4 = fedorov_wynn_stan_par_tgconstraint(mean_log_det_stan, datastruct_prior_ma, inits, chosen_indices, tg_constraint = 810,n_iter = 100)
-chosen_indices = c(79,209,71,210) # initial values
-fwstgc_noprior_4 = fedorov_wynn_stan_par_tgconstraint(mean_log_det_stan, datastruct_noprior_ma, inits, chosen_indices, tg_constraint = 810,n_iter = 100)
-
-chosen_indices = c(7,201,210,118,87) # initial values
-fwstgc_prior_5 = fedorov_wynn_stan_par_tgconstraint(mean_log_det_stan, datastruct_prior_ma, inits, chosen_indices, tg_constraint = 810,n_iter = 100)
-chosen_indices = c(7,124,209, 71,210) # initial values
-fwstgc_noprior_5 = fedorov_wynn_stan_par_tgconstraint(mean_log_det_stan, datastruct_noprior_ma, inits, chosen_indices, tg_constraint = 810,n_iter = 100)
-```
-
 ### Read the results and compare
-#### Unconstrained-figure
 ```{r single-form-analytes-logDet-summary}
 chosen_indices_prior = c(65,66,209,210) # ref
 chosen_indices_noprior= c(65,66,209,210) # ref
@@ -377,7 +362,7 @@ f2_1 = p2
 f3_1 = p3
 ```
 
-#### Table Summary
+### Table Summary
 ```{r table-single}
 tab1=summary_results_diff %>% 
   mutate(value = exp(value)) %>%
@@ -416,107 +401,8 @@ tab2=summary_results_diffprior %>%
 tab2
 ```
 
-#### tg constrained
-```{r single-form-analytes-logDet-summary-tgc}
-chosen_indices_prior = c(65,66,209,210) # ref
-chosen_indices_noprior= c(65,66,209,210) # ref
-fwstgc_prior_ref = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma, inits, chosen_indices_prior, n_iter = 0)
-fwstgc_noprior_ref = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma, inits, chosen_indices_noprior, n_iter = 0)
-
-chosen_indices_prior   = c(209,212) # p=2
-fwstgc_prior_2 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma, inits, chosen_indices_prior, n_iter = 0)
-
-chosen_indices_prior   = c(210,209,79) # p=3
-chosen_indices_noprior = c(210,209,79) # p=3
-fwstgc_prior_3 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma, inits, chosen_indices_prior, n_iter = 0)
-fwstgc_noprior_3 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma, inits, chosen_indices_noprior, n_iter = 0)
-
-chosen_indices_prior   = c(209,210,118,87) # p=4
-chosen_indices_noprior = c(79,209,71,210) # p=4
-fwstgc_prior_4 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma, inits, chosen_indices_prior, n_iter = 0)
-fwstgc_noprior_4 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma, inits, chosen_indices_noprior, n_iter = 0)
-
-chosen_indices_prior = c(7,201,210,118,87) # p=5
-chosen_indices_noprior = c(7,124,209, 71,210) # p=5
-fwstgc_prior_5 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_prior_ma, inits, chosen_indices_prior, n_iter = 0)
-fwstgc_noprior_5 = fedorov_wynn_stan_par(mean_log_det_stan, datastruct_noprior_ma, inits, chosen_indices_noprior, n_iter = 0)
-
-summary_resultstgc = tibble(prior_ref = fwstgc_prior_ref$log_det_FIM,
-                          noprior_ref = fwstgc_noprior_ref$log_det_FIM,
-                          prior_2 = fwstgc_prior_2$log_det_FIM,
-                          prior_3 = fwstgc_prior_3$log_det_FIM,
-                          noprior_3 = fwstgc_noprior_3$log_det_FIM,
-                          prior_4 = fwstgc_prior_4$log_det_FIM,
-                          noprior_4 = fwstgc_noprior_4$log_det_FIM,
-                          prior_5 = fwstgc_prior_5$log_det_FIM,
-                          noprior_5 = fwstgc_noprior_5$log_det_FIM) %>%
-  pivot_longer(prior_ref:noprior_5, names_to = "method")
-
-p1<-ggplot(summary_resultstgc, aes(y=method,x=value))+
-  geom_boxplot()+
-  labs(x="log(|FIM|)", y = "Method")
-
-summary_results_difftgc = tibble(fws_prior_ref = fwstgc_prior_ref$log_det_FIM,
-                          fws_noprior_ref = fwstgc_noprior_ref$log_det_FIM,
-                          fws_prior_2 = fwstgc_prior_2$log_det_FIM,
-                          fws_prior_3 = fwstgc_prior_3$log_det_FIM,
-                          fws_noprior_3 = fwstgc_noprior_3$log_det_FIM,
-                          fws_prior_4 = fwstgc_prior_4$log_det_FIM,
-                          fws_noprior_4 = fwstgc_noprior_4$log_det_FIM,
-                          fws_prior_5 = fwstgc_prior_5$log_det_FIM,
-                          fws_noprior_5 = fwstgc_noprior_5$log_det_FIM) %>%
-  mutate(d_prior_2 = (fws_prior_2 - fws_prior_ref)/n_param,
-         d_prior_3 = (fws_prior_3 - fws_prior_ref)/n_param,
-         d_noprior_3 = (fws_noprior_3 - fws_noprior_ref)/n_param,
-         d_prior_4 = (fws_prior_4 - fws_prior_ref)/n_param,
-         d_noprior_4 = (fws_noprior_4 - fws_noprior_ref)/n_param,
-         d_prior_5 = (fws_prior_5 - fws_prior_ref)/n_param,
-         d_noprior_5 = (fws_noprior_5 - fws_noprior_ref)/n_param)%>%
-  pivot_longer(d_prior_2:d_noprior_5, names_to = "method")
-
-p2=ggplot(summary_results_difftgc, aes(y=method,x=exp(value)))+
-  geom_boxplot()+
-  labs(x="Efficiency relative to the reference design", y = "Method")+
-  geom_vline(xintercept = 1, linetype = "dotted")
-
-summary_results_diffpriortgc = tibble(fws_prior_ref = fwstgc_prior_ref$log_det_FIM,
-                          fws_noprior_ref = fwstgc_noprior_ref$log_det_FIM,
-                          fws_prior_3 = fwstgc_prior_3$log_det_FIM,
-                          fws_noprior_3 = fwstgc_noprior_3$log_det_FIM,
-                          fws_prior_4 = fwstgc_prior_4$log_det_FIM,
-                          fws_noprior_4 = fwstgc_noprior_4$log_det_FIM,
-                          fws_prior_5 = fwstgc_prior_5$log_det_FIM,
-                          fws_noprior_5 = fwstgc_noprior_5$log_det_FIM) %>%
-  mutate(d_ref  = (fws_prior_ref-fws_noprior_ref)/n_param,
-         d_3 = (fws_prior_3-fws_noprior_3)/n_param,
-         d_4 = (fws_prior_4-fws_noprior_4)/n_param,
-         d_5 = (fws_prior_5-fws_noprior_5)/n_param)%>%
-  pivot_longer(d_ref:d_5, names_to = "method")
-
-p3=ggplot(summary_results_diffpriortgc, aes(y=method,x=exp(value)))+
-  geom_boxplot()+
-  labs(x="Effect of prior on design efficiency", y = "Method")+
-  geom_vline(xintercept = 1, linetype = "dotted") +
-  scale_x_continuous(limits = c(0.5,100),
-                     trans='log10',
-                      breaks=scales::trans_breaks('log10', function(x) 10^x)(c(0.01, 100)),
-                      labels=scales::trans_format('log10', scales::math_format(10^.x)))
-
-p1
-p2
-p3
-
-my.ggsave(.plot=p1, .filename=paste("single-form-analytes-logdFIM-abs-tgc.pdf"), .path = figures_dir1)
-my.ggsave.png(.plot=p1, .filename=paste("single-form-analytes-logdFIM-abs-tgc.png"), .path = figures_dir1)
-my.ggsave(.plot=p2, .filename=paste("single-form-analytes-logdFIM-rel-tgc.pdf"), .path = figures_dir1)
-my.ggsave.png(.plot=p2, .filename=paste("single-form-analytes-logdFIM-rel-tgc.png"), .path = figures_dir1)
-my.ggsave(.plot=p3, .filename=paste("single-form-analytes-logdFIM-prioreff-tgc.pdf"), .path = figures_dir1)
-my.ggsave.png(.plot=p3, .filename=paste("single-form-analytes-logdFIM-prioreff-tgc.png"), .path = figures_dir1)
-```
-
 ### Table
 
-#### Unconstrained
 ```{r single-form-table}
 data_ma=hplcparam_candidates_df%>%filter(xpH==0)%>%
   mutate(line=1:n())
@@ -578,72 +464,6 @@ plot1 <- gg+p1+p2+ plot_layout(ncol = 3, widths = c(1, 20,20))
 
 my.ggsave(.plot=plot1, .filename=paste("single-form-analytes-table.pdf"), .path = tables_dir1)
 my.ggsave.png(.plot=plot1, .filename=paste("single-form-analytes-table.png"), .path = tables_dir1)
-
-tab1
-tab2
-```
-#### tg constrained
-```{r single-form-table-tgc}
-data_ma=hplcparam_candidates_df%>%filter(xpH==0)%>%
-  mutate(line=1:n())
-
-combined_results = list(
-prior_ref = fwstgc_prior_ref$chosen_indices,
-noprior_ref = fwstgc_noprior_ref$chosen_indices,
-prior_2 = fwstgc_prior_2$chosen_indices,
-noprior_2 = 10000+fwstgc_prior_2$chosen_indices, # dummy
-prior_3 = fwstgc_prior_3$chosen_indices,
-noprior_3 = fwstgc_noprior_3$chosen_indices,
-prior_4 = fwstgc_prior_4$chosen_indices,
-noprior_4 = fwstgc_noprior_4$chosen_indices,
-prior_5 = fwstgc_prior_5$chosen_indices,
-noprior_5 = fwstgc_noprior_5$chosen_indices)
-
-selected_exp = enframe(combined_results)%>%
-   unnest(value) %>%
-  rename(line=value, Name = name) %>%
-  left_join(data_ma, by = "line")%>%
-   arrange(Name,tg, fio)%>%
-  mutate(Modifier = if_else(m==0, "MeOH", "ACN")) %>%
-  select(-c(line,xpH,m,td,to,te,fif)) %>%
-  mutate(type = if_else(str_detect(Name, 'noprior'), "No prior", "Prior"))%>%
-  mutate(across(where(is.numeric), ~replace_na(., -1)))
-
-tab1<-selected_exp %>%
-  filter(type == "Prior") %>%
-  select(-type)%>%
-  as_grouped_data(groups = "Name") %>%
-  flextable() 
-  
-tab2<-selected_exp %>%
-  filter(type == "No prior")%>%
-    select(-type)%>%
-  as_grouped_data(groups = "Name") %>%
-  flextable() 
-
-tab2 <- set_formatter(
-  tab2, 
-  tg = function(x) ifelse(x==-1," ", sprintf("%d", x) ),
-  fio = function(x) ifelse(x==-1," ", sprintf("%.2f", x) )
-  )
-
-p1 = gen_grob(tab1, fit = "auto", just = "centre")
-p2 = gen_grob(tab2, fit = "auto", just = "centre") 
-
-gg<-ggplot()+
-       theme(
-         panel.background = element_rect(fill='transparent'),
-         plot.background = element_rect(fill='transparent', color=NA),
-         panel.grid.major = element_blank(),
-         panel.grid.minor = element_blank(),
-         legend.background = element_rect(fill='transparent'),
-         legend.box.background = element_rect(fill='transparent')
-       )
-
-plot1 <- gg+p1+p2+ plot_layout(ncol = 3, widths = c(1, 20,20))
-
-my.ggsave(.plot=plot1, .filename=paste("single-form-analytes-table-tgc.pdf"), .path = tables_dir1)
-my.ggsave.png(.plot=plot1, .filename=paste("single-form-analytes-table-tgc.png"), .path = tables_dir1)
 
 tab1
 tab2

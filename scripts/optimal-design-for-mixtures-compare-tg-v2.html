@@ -89,35 +89,6 @@ div.csl-indent {
 <link href="optimal-design-for-mixtures-compare-tg-v2_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="optimal-design-for-mixtures-compare-tg-v2_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
 
-  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
-
-<script type="text/javascript">
-const typesetMath = (el) => {
-  if (window.MathJax) {
-    // MathJax Typeset
-    window.MathJax.typeset([el]);
-  } else if (window.katex) {
-    // KaTeX Render
-    var mathElements = el.getElementsByClassName("math");
-    var macros = [];
-    for (var i = 0; i < mathElements.length; i++) {
-      var texText = mathElements[i].firstChild;
-      if (mathElements[i].tagName == "SPAN") {
-        window.katex.render(texText.data, mathElements[i], {
-          displayMode: mathElements[i].classList.contains('display'),
-          throwOnError: false,
-          macros: macros,
-          fleqn: false
-        });
-      }
-    }
-  }
-}
-window.Quarto = {
-  typesetMath
-};
-</script>
 
 </head>
 
@@ -241,7 +212,6 @@ window.Quarto = {
 </section>
 <section id="priors" class="level1">
 <h1>Priors</h1>
-<p>Priors are based on the following article “Comparison of Chromatographic Stationary Phases Using a Bayesian-Based Multilevel Model” by Paweł Wiczling and Agnieszka Kamedulska published in Analytical Chemistry 2024 96 (3), 1310-1319. In this work a simplified approach is taken with the focus on the neutral, acidic and basic forms of analytes and a single chromatographic stationary phase (Xbridge), assuming the pKa and changes of pKa with organic modifier are known.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -302,135 +272,133 @@ window.Quarto = {
 </section>
 <section id="simulation" class="level1">
 <h1>Simulation</h1>
-<p>The simulation involved n = 500 analytes with log P and analyte type (acid and base) drawn at random from the following distributions: <span class="math inline">\(logP_i \sim normal(2,2.2)\)</span> and <span class="math inline">\(Analyte_i \sim categorical(A=0.5,B=0.5)\)</span>. Log P values were truncated within 0.5 and 7. For signle pH scenarios the analyte form distribution was 40% for neutral, 30% for acidic, and 30% for basic form.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>max_var_gra_tg <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">fr_tg=</span><span class="dv">1</span>){</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>hplcparam_candidates_df <span class="ot">=</span> <span class="fu">expand_grid</span>(<span class="at">tg=</span><span class="fu">seq</span>(<span class="dv">10</span>,<span class="dv">270</span>,<span class="at">by=</span><span class="dv">10</span>), </span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">td=</span><span class="fl">2.1</span>, </span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">to=</span><span class="fl">0.532</span>,</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">te=</span><span class="fl">0.04</span>, </span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">fio =</span> <span class="fu">seq</span>(<span class="fl">0.05</span>, <span class="fl">0.2</span>, <span class="at">by=</span><span class="fl">0.05</span>),</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">fif =</span> <span class="fl">0.8</span>,</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">m=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">xpH=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">1</span>))</span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="co">#--------------------------------------------------------------------------------------------------</span></span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>data_ma_full <span class="ot">&lt;-</span>hplcparam_candidates_df<span class="sc">%&gt;%</span><span class="fu">filter</span>(xpH<span class="sc">==</span><span class="dv">0</span>)</span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>nObs_sim <span class="ot">=</span> <span class="fu">nrow</span>(data_ma_full)</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>steps_sim <span class="ot">=</span> <span class="dv">4</span> <span class="sc">+</span> <span class="dv">6</span><span class="sc">*</span>data_ma_full<span class="sc">$</span>m</span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>hplcparam_sim<span class="ot">=</span><span class="fu">as.matrix</span>(data_ma_full<span class="sc">%&gt;%</span>dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="fu">c</span>(tg,td,to,te,fio,fif,m)))</span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="co">#--------------------------------------------------------------------------------------------------</span></span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>data_ma<span class="ot">=</span>hplcparam_candidates_df<span class="sc">%&gt;%</span></span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="fu">mutate</span>(<span class="at">tg=</span>tg<span class="sc">*</span>fr_tg)<span class="sc">%&gt;%</span></span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a><span class="fu">filter</span>(xpH<span class="sc">==</span><span class="dv">0</span>)</span>
-<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>nObs <span class="ot">=</span> <span class="fu">nrow</span>(data_ma);</span>
-<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>nAnalytes <span class="ot">=</span><span class="dv">50</span>;</span>
-<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>cseed <span class="ot">=</span> <span class="dv">1234</span>;</span>
-<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>n_param <span class="ot">=</span> <span class="dv">3</span>;</span>
-<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>n_rep <span class="ot">=</span> <span class="dv">10</span>;</span>
-<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>datastruct_noprior_ma<span class="ot">=</span><span class="fu">list</span>()</span>
-<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>datastruct_prior_ma<span class="ot">=</span><span class="fu">list</span>()</span>
-<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>inits <span class="ot">=</span> <span class="fu">list</span>()</span>
-<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n_rep) {</span>
-<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>datastruct_prior_ma[[i]] <span class="ot">=</span> <span class="fu">list</span>(<span class="at">nObs=</span>nObs,</span>
-<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>                   <span class="at">nAnalytes=</span>nAnalytes,</span>
-<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>                   <span class="at">steps =</span> <span class="dv">4</span> <span class="sc">+</span> <span class="dv">6</span><span class="sc">*</span>data_ma<span class="sc">$</span>m,</span>
-<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>                   <span class="at">hplcparam=</span><span class="fu">as.matrix</span>(data_ma<span class="sc">%&gt;%</span>dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="fu">c</span>(tg,td,to,te,fio,fif,m))),</span>
-<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>                   <span class="at">include_prior =</span> <span class="dv">1</span>,</span>
-<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>                   <span class="at">run_estimation=</span><span class="dv">1</span>,</span>
-<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>                   <span class="at">nSel =</span> nObs,</span>
-<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>                   <span class="at">selected =</span> <span class="dv">1</span><span class="sc">:</span>nObs,</span>
-<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>                   <span class="at">nObs_sim=</span>nObs_sim,</span>
-<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>                   <span class="at">steps_sim =</span> steps_sim,</span>
-<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a>                   <span class="at">hplcparam_sim=</span>hplcparam_sim)</span>
-<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>fit_gq  <span class="ot">=</span> mod_analytes_gq<span class="sc">$</span><span class="fu">sample</span>(<span class="at">data =</span> datastruct_prior_ma[[i]],</span>
-<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>                                         <span class="at">seed =</span> cseed,</span>
-<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a>                                         <span class="at">fixed_param =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a>                                         <span class="at">chains =</span> <span class="dv">1</span>,</span>
-<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a>                                         <span class="at">iter_sampling=</span><span class="dv">1</span>)</span>
-<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a>datastruct_prior_ma[[i]]<span class="sc">$</span>trobs <span class="ot">=</span> <span class="fu">matrix</span>(fit_gq<span class="sc">$</span><span class="fu">draws</span>(<span class="at">format =</span> <span class="st">"matrix"</span>, <span class="at">variable =</span> <span class="st">"y_hat_sim"</span>),nAnalytes,nObs)</span>
-<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a>datastruct_prior_ma[[i]]<span class="sc">$</span>logPobs <span class="ot">=</span> fit_gq<span class="sc">$</span><span class="fu">draws</span>(<span class="at">format =</span> <span class="st">"matrix"</span>, <span class="at">variable =</span> <span class="st">"logPobs"</span>)[<span class="dv">1</span><span class="sc">:</span>nAnalytes]</span>
-<span id="cb7-54"><a href="#cb7-54" aria-hidden="true" tabindex="-1"></a>datastruct_prior_ma[[i]]<span class="sc">$</span>N1A2B3 <span class="ot">=</span> fit_gq<span class="sc">$</span><span class="fu">draws</span>(<span class="at">format =</span> <span class="st">"matrix"</span>, <span class="at">variable =</span> <span class="st">"N1A2B3"</span>)[<span class="dv">1</span><span class="sc">:</span>nAnalytes]</span>
-<span id="cb7-55"><a href="#cb7-55" aria-hidden="true" tabindex="-1"></a>param <span class="ot">=</span> <span class="fu">matrix</span>(fit_gq<span class="sc">$</span><span class="fu">draws</span>(<span class="at">format =</span> <span class="st">"matrix"</span>, <span class="at">variable =</span> <span class="st">"paramsim"</span>),nAnalytes,<span class="dv">3</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>hplcparam_candidates_df <span class="ot">=</span> <span class="fu">expand_grid</span>(<span class="at">tg=</span><span class="fu">seq</span>(<span class="dv">10</span>,<span class="dv">270</span>,<span class="at">by=</span><span class="dv">10</span>), </span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">td=</span><span class="fl">2.1</span>, </span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">to=</span><span class="fl">0.532</span>,</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">te=</span><span class="fl">0.04</span>, </span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">fio =</span> <span class="fu">seq</span>(<span class="fl">0.05</span>, <span class="fl">0.2</span>, <span class="at">by=</span><span class="fl">0.05</span>),</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">fif =</span> <span class="fl">0.8</span>,</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">m=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">xpH=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">1</span>))</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="co">#--------------------------------------------------------------------------------------------------</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>data_ma_full <span class="ot">&lt;-</span>hplcparam_candidates_df<span class="sc">%&gt;%</span><span class="fu">filter</span>(xpH<span class="sc">==</span><span class="dv">0</span>)</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>nObs_sim <span class="ot">=</span> <span class="fu">nrow</span>(data_ma_full)</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>steps_sim <span class="ot">=</span> <span class="dv">4</span> <span class="sc">+</span> <span class="dv">6</span><span class="sc">*</span>data_ma_full<span class="sc">$</span>m</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>hplcparam_sim<span class="ot">=</span><span class="fu">as.matrix</span>(data_ma_full<span class="sc">%&gt;%</span>dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="fu">c</span>(tg,td,to,te,fio,fif,m)))</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="co">#--------------------------------------------------------------------------------------------------</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>data_ma<span class="ot">=</span>hplcparam_candidates_df<span class="sc">%&gt;%</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="fu">mutate</span>(<span class="at">tg=</span>tg<span class="sc">*</span>fr_tg)<span class="sc">%&gt;%</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="fu">filter</span>(xpH<span class="sc">==</span><span class="dv">0</span>)</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>nObs <span class="ot">=</span> <span class="fu">nrow</span>(data_ma);</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>nAnalytes <span class="ot">=</span><span class="dv">50</span>;</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>cseed <span class="ot">=</span> <span class="dv">1234</span>;</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>n_param <span class="ot">=</span> <span class="dv">3</span>;</span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>n_rep <span class="ot">=</span> <span class="dv">10</span>;</span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>datastruct_noprior_ma<span class="ot">=</span><span class="fu">list</span>()</span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>datastruct_prior_ma<span class="ot">=</span><span class="fu">list</span>()</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>inits <span class="ot">=</span> <span class="fu">list</span>()</span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n_rep) {</span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>datastruct_prior_ma[[i]] <span class="ot">=</span> <span class="fu">list</span>(<span class="at">nObs=</span>nObs,</span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>                   <span class="at">nAnalytes=</span>nAnalytes,</span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>                   <span class="at">steps =</span> <span class="dv">4</span> <span class="sc">+</span> <span class="dv">6</span><span class="sc">*</span>data_ma<span class="sc">$</span>m,</span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>                   <span class="at">hplcparam=</span><span class="fu">as.matrix</span>(data_ma<span class="sc">%&gt;%</span>dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="fu">c</span>(tg,td,to,te,fio,fif,m))),</span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>                   <span class="at">include_prior =</span> <span class="dv">1</span>,</span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>                   <span class="at">run_estimation=</span><span class="dv">1</span>,</span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>                   <span class="at">nSel =</span> nObs,</span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>                   <span class="at">selected =</span> <span class="dv">1</span><span class="sc">:</span>nObs,</span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>                   <span class="at">nObs_sim=</span>nObs_sim,</span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>                   <span class="at">steps_sim =</span> steps_sim,</span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>                   <span class="at">hplcparam_sim=</span>hplcparam_sim)</span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a>fit_gq  <span class="ot">=</span> mod_analytes_gq<span class="sc">$</span><span class="fu">sample</span>(<span class="at">data =</span> datastruct_prior_ma[[i]],</span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>                                         <span class="at">seed =</span> cseed,</span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>                                         <span class="at">fixed_param =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a>                                         <span class="at">chains =</span> <span class="dv">1</span>,</span>
+<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a>                                         <span class="at">iter_sampling=</span><span class="dv">1</span>)</span>
+<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a>datastruct_prior_ma[[i]]<span class="sc">$</span>trobs <span class="ot">=</span> <span class="fu">matrix</span>(fit_gq<span class="sc">$</span><span class="fu">draws</span>(<span class="at">format =</span> <span class="st">"matrix"</span>, <span class="at">variable =</span> <span class="st">"y_hat_sim"</span>),nAnalytes,nObs)</span>
+<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a>datastruct_prior_ma[[i]]<span class="sc">$</span>logPobs <span class="ot">=</span> fit_gq<span class="sc">$</span><span class="fu">draws</span>(<span class="at">format =</span> <span class="st">"matrix"</span>, <span class="at">variable =</span> <span class="st">"logPobs"</span>)[<span class="dv">1</span><span class="sc">:</span>nAnalytes]</span>
+<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a>datastruct_prior_ma[[i]]<span class="sc">$</span>N1A2B3 <span class="ot">=</span> fit_gq<span class="sc">$</span><span class="fu">draws</span>(<span class="at">format =</span> <span class="st">"matrix"</span>, <span class="at">variable =</span> <span class="st">"N1A2B3"</span>)[<span class="dv">1</span><span class="sc">:</span>nAnalytes]</span>
+<span id="cb7-54"><a href="#cb7-54" aria-hidden="true" tabindex="-1"></a>param <span class="ot">=</span> <span class="fu">matrix</span>(fit_gq<span class="sc">$</span><span class="fu">draws</span>(<span class="at">format =</span> <span class="st">"matrix"</span>, <span class="at">variable =</span> <span class="st">"paramsim"</span>),nAnalytes,<span class="dv">3</span>)</span>
+<span id="cb7-55"><a href="#cb7-55" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb7-56"><a href="#cb7-56" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-57"><a href="#cb7-57" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-58"><a href="#cb7-58" aria-hidden="true" tabindex="-1"></a>datastruct_noprior_ma[[i]]<span class="ot">=</span>datastruct_prior_ma[[i]];</span>
-<span id="cb7-59"><a href="#cb7-59" aria-hidden="true" tabindex="-1"></a>datastruct_noprior_ma[[i]]<span class="sc">$</span>include_prior <span class="ot">=</span> <span class="fl">0.01</span>;</span>
-<span id="cb7-60"><a href="#cb7-60" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-61"><a href="#cb7-61" aria-hidden="true" tabindex="-1"></a>inits[[i]]<span class="ot">=</span>param</span>
-<span id="cb7-62"><a href="#cb7-62" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-63"><a href="#cb7-63" aria-hidden="true" tabindex="-1"></a>cseed <span class="ot">=</span> cseed<span class="sc">+</span><span class="dv">1</span></span>
-<span id="cb7-64"><a href="#cb7-64" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb7-65"><a href="#cb7-65" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-66"><a href="#cb7-66" aria-hidden="true" tabindex="-1"></a>logP <span class="ot">=</span> <span class="fu">unlist</span>(purrr<span class="sc">::</span><span class="fu">map</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(datastruct_noprior_ma),\(i) datastruct_noprior_ma[[i]]<span class="sc">$</span>logPobs))</span>
-<span id="cb7-67"><a href="#cb7-67" aria-hidden="true" tabindex="-1"></a>NAB <span class="ot">=</span> <span class="fu">unlist</span>(purrr<span class="sc">::</span><span class="fu">map</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(datastruct_noprior_ma),\(i) datastruct_noprior_ma[[i]]<span class="sc">$</span>N1A2B3))</span>
-<span id="cb7-68"><a href="#cb7-68" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-69"><a href="#cb7-69" aria-hidden="true" tabindex="-1"></a><span class="co">#--------------------------------------------------------------------------------------------------</span></span>
-<span id="cb7-70"><a href="#cb7-70" aria-hidden="true" tabindex="-1"></a>chosen_indices_prior <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">65</span>,<span class="dv">66</span>,<span class="dv">209</span>,<span class="dv">210</span>) <span class="co"># ref</span></span>
-<span id="cb7-71"><a href="#cb7-71" aria-hidden="true" tabindex="-1"></a>chosen_indices_noprior<span class="ot">=</span> <span class="fu">c</span>(<span class="dv">65</span>,<span class="dv">66</span>,<span class="dv">209</span>,<span class="dv">210</span>) <span class="co"># ref</span></span>
-<span id="cb7-72"><a href="#cb7-72" aria-hidden="true" tabindex="-1"></a>maxt_prior_ref <span class="ot">=</span> <span class="fu">sum</span>(data_ma<span class="sc">$</span>tg[chosen_indices_prior])</span>
-<span id="cb7-73"><a href="#cb7-73" aria-hidden="true" tabindex="-1"></a>maxt_noprior_ref <span class="ot">=</span> <span class="fu">sum</span>(data_ma<span class="sc">$</span>tg[chosen_indices_noprior])</span>
-<span id="cb7-74"><a href="#cb7-74" aria-hidden="true" tabindex="-1"></a>prior_ma_ref <span class="ot">=</span> <span class="fu">fun_predict_stan_results</span>(mod_analytes_sim, datastruct_prior_ma, inits, chosen_indices_prior, <span class="dv">10</span>) </span>
-<span id="cb7-75"><a href="#cb7-75" aria-hidden="true" tabindex="-1"></a>noprior_ma_ref <span class="ot">=</span> <span class="fu">fun_predict_stan_results</span>(mod_analytes_sim, datastruct_noprior_ma, inits, chosen_indices_noprior, <span class="dv">10</span>) </span>
-<span id="cb7-76"><a href="#cb7-76" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-77"><a href="#cb7-77" aria-hidden="true" tabindex="-1"></a>chosen_indices_prior   <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">209</span>,<span class="dv">212</span>) <span class="co"># p=2</span></span>
-<span id="cb7-78"><a href="#cb7-78" aria-hidden="true" tabindex="-1"></a>maxt_prior_2 <span class="ot">=</span> <span class="fu">sum</span>(data_ma<span class="sc">$</span>tg[chosen_indices_prior])</span>
-<span id="cb7-79"><a href="#cb7-79" aria-hidden="true" tabindex="-1"></a>prior_ma_2 <span class="ot">=</span> <span class="fu">fun_predict_stan_results</span>(mod_analytes_sim, datastruct_prior_ma, inits, chosen_indices_prior, <span class="dv">10</span>) </span>
-<span id="cb7-80"><a href="#cb7-80" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-81"><a href="#cb7-81" aria-hidden="true" tabindex="-1"></a>chosen_indices_prior   <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">210</span>,<span class="dv">209</span>,<span class="dv">79</span>) <span class="co"># p=3</span></span>
-<span id="cb7-82"><a href="#cb7-82" aria-hidden="true" tabindex="-1"></a>chosen_indices_noprior <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">210</span>,<span class="dv">209</span>,<span class="dv">79</span>) <span class="co"># p=3</span></span>
-<span id="cb7-83"><a href="#cb7-83" aria-hidden="true" tabindex="-1"></a>maxt_prior_3 <span class="ot">=</span> <span class="fu">sum</span>(data_ma<span class="sc">$</span>tg[chosen_indices_prior])</span>
-<span id="cb7-84"><a href="#cb7-84" aria-hidden="true" tabindex="-1"></a>maxt_noprior_3 <span class="ot">=</span> <span class="fu">sum</span>(data_ma<span class="sc">$</span>tg[chosen_indices_noprior])</span>
-<span id="cb7-85"><a href="#cb7-85" aria-hidden="true" tabindex="-1"></a>prior_ma_3 <span class="ot">=</span> <span class="fu">fun_predict_stan_results</span>(mod_analytes_sim, datastruct_prior_ma, inits, chosen_indices_prior, <span class="dv">10</span>) </span>
-<span id="cb7-86"><a href="#cb7-86" aria-hidden="true" tabindex="-1"></a>noprior_ma_3 <span class="ot">=</span> <span class="fu">fun_predict_stan_results</span>(mod_analytes_sim, datastruct_noprior_ma, inits, chosen_indices_noprior, <span class="dv">10</span>) </span>
-<span id="cb7-87"><a href="#cb7-87" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-88"><a href="#cb7-88" aria-hidden="true" tabindex="-1"></a>chosen_indices_prior   <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">209</span>,<span class="dv">210</span>,<span class="dv">215</span>,<span class="dv">79</span>) <span class="co"># p=4</span></span>
-<span id="cb7-89"><a href="#cb7-89" aria-hidden="true" tabindex="-1"></a>chosen_indices_noprior <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">209</span>,<span class="dv">210</span>,<span class="dv">215</span>,<span class="dv">71</span>) <span class="co"># p=4</span></span>
-<span id="cb7-90"><a href="#cb7-90" aria-hidden="true" tabindex="-1"></a>maxt_prior_4 <span class="ot">=</span> <span class="fu">sum</span>(data_ma<span class="sc">$</span>tg[chosen_indices_prior])</span>
-<span id="cb7-91"><a href="#cb7-91" aria-hidden="true" tabindex="-1"></a>maxt_noprior_4 <span class="ot">=</span> <span class="fu">sum</span>(data_ma<span class="sc">$</span>tg[chosen_indices_noprior])</span>
-<span id="cb7-92"><a href="#cb7-92" aria-hidden="true" tabindex="-1"></a>prior_ma_4 <span class="ot">=</span> <span class="fu">fun_predict_stan_results</span>(mod_analytes_sim, datastruct_prior_ma, inits, chosen_indices_prior, <span class="dv">10</span>) </span>
-<span id="cb7-93"><a href="#cb7-93" aria-hidden="true" tabindex="-1"></a>noprior_ma_4 <span class="ot">=</span> <span class="fu">fun_predict_stan_results</span>(mod_analytes_sim, datastruct_noprior_ma, inits, chosen_indices_noprior, <span class="dv">10</span>)</span>
-<span id="cb7-94"><a href="#cb7-94" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-95"><a href="#cb7-95" aria-hidden="true" tabindex="-1"></a>chosen_indices_prior <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">210</span>,<span class="dv">209</span>,<span class="dv">212</span>,<span class="dv">215</span>,<span class="dv">79</span>) <span class="co"># p=5</span></span>
-<span id="cb7-96"><a href="#cb7-96" aria-hidden="true" tabindex="-1"></a>chosen_indices_noprior <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">210</span>,<span class="dv">209</span>,<span class="dv">212</span>,<span class="dv">215</span>,<span class="dv">71</span>) <span class="co"># p=5</span></span>
-<span id="cb7-97"><a href="#cb7-97" aria-hidden="true" tabindex="-1"></a>maxt_prior_5 <span class="ot">=</span> <span class="fu">sum</span>(data_ma<span class="sc">$</span>tg[chosen_indices_prior])</span>
-<span id="cb7-98"><a href="#cb7-98" aria-hidden="true" tabindex="-1"></a>maxt_noprior_5 <span class="ot">=</span> <span class="fu">sum</span>(data_ma<span class="sc">$</span>tg[chosen_indices_noprior])</span>
-<span id="cb7-99"><a href="#cb7-99" aria-hidden="true" tabindex="-1"></a>prior_ma_5 <span class="ot">=</span> <span class="fu">fun_predict_stan_results</span>(mod_analytes_sim, datastruct_prior_ma, inits, chosen_indices_prior, <span class="dv">10</span>) </span>
-<span id="cb7-100"><a href="#cb7-100" aria-hidden="true" tabindex="-1"></a>noprior_ma_5 <span class="ot">=</span> <span class="fu">fun_predict_stan_results</span>(mod_analytes_sim, datastruct_noprior_ma, inits, chosen_indices_noprior, <span class="dv">10</span>) </span>
-<span id="cb7-101"><a href="#cb7-101" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-102"><a href="#cb7-102" aria-hidden="true" tabindex="-1"></a>iresults <span class="ot">=</span> <span class="fu">rbind</span>(prior_ma_ref<span class="sc">$</span>iresults<span class="sc">%&gt;%</span></span>
-<span id="cb7-103"><a href="#cb7-103" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">mutate</span>(<span class="at">method =</span><span class="st">"prior_ref"</span>, <span class="at">maxt =</span> maxt_prior_ref),</span>
-<span id="cb7-104"><a href="#cb7-104" aria-hidden="true" tabindex="-1"></a>                 noprior_ma_ref<span class="sc">$</span>iresults<span class="sc">%&gt;%</span></span>
-<span id="cb7-105"><a href="#cb7-105" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">mutate</span>(<span class="at">method =</span><span class="st">"noprior_ref"</span>, <span class="at">maxt =</span> maxt_noprior_ref),</span>
-<span id="cb7-106"><a href="#cb7-106" aria-hidden="true" tabindex="-1"></a>                prior_ma_2<span class="sc">$</span>iresults<span class="sc">%&gt;%</span></span>
-<span id="cb7-107"><a href="#cb7-107" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">mutate</span>(<span class="at">method =</span><span class="st">"prior_2"</span>, <span class="at">maxt =</span> maxt_prior_2),</span>
-<span id="cb7-108"><a href="#cb7-108" aria-hidden="true" tabindex="-1"></a>                 prior_ma_3<span class="sc">$</span>iresults<span class="sc">%&gt;%</span></span>
-<span id="cb7-109"><a href="#cb7-109" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">mutate</span>(<span class="at">method =</span><span class="st">"prior_3"</span>, <span class="at">maxt =</span> maxt_prior_3),</span>
-<span id="cb7-110"><a href="#cb7-110" aria-hidden="true" tabindex="-1"></a>                 noprior_ma_3<span class="sc">$</span>iresults<span class="sc">%&gt;%</span></span>
-<span id="cb7-111"><a href="#cb7-111" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">mutate</span>(<span class="at">method =</span><span class="st">"noprior_3"</span>, <span class="at">maxt =</span> maxt_noprior_3),</span>
-<span id="cb7-112"><a href="#cb7-112" aria-hidden="true" tabindex="-1"></a>                 prior_ma_4<span class="sc">$</span>iresults<span class="sc">%&gt;%</span></span>
-<span id="cb7-113"><a href="#cb7-113" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">mutate</span>(<span class="at">method =</span><span class="st">"prior_4"</span>, <span class="at">maxt =</span> maxt_prior_4),</span>
-<span id="cb7-114"><a href="#cb7-114" aria-hidden="true" tabindex="-1"></a>                 noprior_ma_4<span class="sc">$</span>iresults<span class="sc">%&gt;%</span></span>
-<span id="cb7-115"><a href="#cb7-115" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">mutate</span>(<span class="at">method =</span><span class="st">"noprior_4"</span>, <span class="at">maxt =</span> maxt_noprior_4),</span>
-<span id="cb7-116"><a href="#cb7-116" aria-hidden="true" tabindex="-1"></a>                 prior_ma_5<span class="sc">$</span>iresults<span class="sc">%&gt;%</span></span>
-<span id="cb7-117"><a href="#cb7-117" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">mutate</span>(<span class="at">method =</span><span class="st">"prior_5"</span>, <span class="at">maxt =</span> maxt_prior_5),</span>
-<span id="cb7-118"><a href="#cb7-118" aria-hidden="true" tabindex="-1"></a>                 noprior_ma_5<span class="sc">$</span>iresults<span class="sc">%&gt;%</span></span>
-<span id="cb7-119"><a href="#cb7-119" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">mutate</span>(<span class="at">method =</span><span class="st">"noprior_5"</span>, <span class="at">maxt =</span> maxt_noprior_5))<span class="sc">%&gt;%</span></span>
-<span id="cb7-120"><a href="#cb7-120" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">ivar =</span> <span class="fu">if_else</span>(ivar<span class="sc">&gt;</span><span class="fl">1e6</span>,<span class="fl">1e6</span>,ivar)) <span class="sc">%&gt;%</span></span>
-<span id="cb7-121"><a href="#cb7-121" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(<span class="fu">tibble</span>(<span class="at">i=</span><span class="fu">as.factor</span>(<span class="fu">seq</span>(<span class="dv">1</span>,nAnalytes<span class="sc">*</span>n_rep,<span class="dv">1</span>)),<span class="at">logP=</span>logP, <span class="at">Type=</span>NAB))<span class="sc">%&gt;%</span></span>
-<span id="cb7-122"><a href="#cb7-122" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">fr_tg=</span>fr_tg)</span>
-<span id="cb7-123"><a href="#cb7-123" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-124"><a href="#cb7-124" aria-hidden="true" tabindex="-1"></a><span class="fu">return</span>(iresults)</span>
-<span id="cb7-125"><a href="#cb7-125" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb7-57"><a href="#cb7-57" aria-hidden="true" tabindex="-1"></a>datastruct_noprior_ma[[i]]<span class="ot">=</span>datastruct_prior_ma[[i]];</span>
+<span id="cb7-58"><a href="#cb7-58" aria-hidden="true" tabindex="-1"></a>datastruct_noprior_ma[[i]]<span class="sc">$</span>include_prior <span class="ot">=</span> <span class="fl">0.01</span>;</span>
+<span id="cb7-59"><a href="#cb7-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-60"><a href="#cb7-60" aria-hidden="true" tabindex="-1"></a>inits[[i]]<span class="ot">=</span>param</span>
+<span id="cb7-61"><a href="#cb7-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-62"><a href="#cb7-62" aria-hidden="true" tabindex="-1"></a>cseed <span class="ot">=</span> cseed<span class="sc">+</span><span class="dv">1</span></span>
+<span id="cb7-63"><a href="#cb7-63" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb7-64"><a href="#cb7-64" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-65"><a href="#cb7-65" aria-hidden="true" tabindex="-1"></a>logP <span class="ot">=</span> <span class="fu">unlist</span>(purrr<span class="sc">::</span><span class="fu">map</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(datastruct_noprior_ma),\(i) datastruct_noprior_ma[[i]]<span class="sc">$</span>logPobs))</span>
+<span id="cb7-66"><a href="#cb7-66" aria-hidden="true" tabindex="-1"></a>NAB <span class="ot">=</span> <span class="fu">unlist</span>(purrr<span class="sc">::</span><span class="fu">map</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(datastruct_noprior_ma),\(i) datastruct_noprior_ma[[i]]<span class="sc">$</span>N1A2B3))</span>
+<span id="cb7-67"><a href="#cb7-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-68"><a href="#cb7-68" aria-hidden="true" tabindex="-1"></a><span class="co">#--------------------------------------------------------------------------------------------------</span></span>
+<span id="cb7-69"><a href="#cb7-69" aria-hidden="true" tabindex="-1"></a>chosen_indices_prior <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">65</span>,<span class="dv">66</span>,<span class="dv">209</span>,<span class="dv">210</span>) <span class="co"># ref</span></span>
+<span id="cb7-70"><a href="#cb7-70" aria-hidden="true" tabindex="-1"></a>chosen_indices_noprior<span class="ot">=</span> <span class="fu">c</span>(<span class="dv">65</span>,<span class="dv">66</span>,<span class="dv">209</span>,<span class="dv">210</span>) <span class="co"># ref</span></span>
+<span id="cb7-71"><a href="#cb7-71" aria-hidden="true" tabindex="-1"></a>maxt_prior_ref <span class="ot">=</span> <span class="fu">sum</span>(data_ma<span class="sc">$</span>tg[chosen_indices_prior])</span>
+<span id="cb7-72"><a href="#cb7-72" aria-hidden="true" tabindex="-1"></a>maxt_noprior_ref <span class="ot">=</span> <span class="fu">sum</span>(data_ma<span class="sc">$</span>tg[chosen_indices_noprior])</span>
+<span id="cb7-73"><a href="#cb7-73" aria-hidden="true" tabindex="-1"></a>prior_ma_ref <span class="ot">=</span> <span class="fu">fun_predict_stan_results</span>(mod_analytes_sim, datastruct_prior_ma, inits, chosen_indices_prior, <span class="dv">10</span>) </span>
+<span id="cb7-74"><a href="#cb7-74" aria-hidden="true" tabindex="-1"></a>noprior_ma_ref <span class="ot">=</span> <span class="fu">fun_predict_stan_results</span>(mod_analytes_sim, datastruct_noprior_ma, inits, chosen_indices_noprior, <span class="dv">10</span>) </span>
+<span id="cb7-75"><a href="#cb7-75" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-76"><a href="#cb7-76" aria-hidden="true" tabindex="-1"></a>chosen_indices_prior   <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">209</span>,<span class="dv">212</span>) <span class="co"># p=2</span></span>
+<span id="cb7-77"><a href="#cb7-77" aria-hidden="true" tabindex="-1"></a>maxt_prior_2 <span class="ot">=</span> <span class="fu">sum</span>(data_ma<span class="sc">$</span>tg[chosen_indices_prior])</span>
+<span id="cb7-78"><a href="#cb7-78" aria-hidden="true" tabindex="-1"></a>prior_ma_2 <span class="ot">=</span> <span class="fu">fun_predict_stan_results</span>(mod_analytes_sim, datastruct_prior_ma, inits, chosen_indices_prior, <span class="dv">10</span>) </span>
+<span id="cb7-79"><a href="#cb7-79" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-80"><a href="#cb7-80" aria-hidden="true" tabindex="-1"></a>chosen_indices_prior   <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">210</span>,<span class="dv">209</span>,<span class="dv">79</span>) <span class="co"># p=3</span></span>
+<span id="cb7-81"><a href="#cb7-81" aria-hidden="true" tabindex="-1"></a>chosen_indices_noprior <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">210</span>,<span class="dv">209</span>,<span class="dv">79</span>) <span class="co"># p=3</span></span>
+<span id="cb7-82"><a href="#cb7-82" aria-hidden="true" tabindex="-1"></a>maxt_prior_3 <span class="ot">=</span> <span class="fu">sum</span>(data_ma<span class="sc">$</span>tg[chosen_indices_prior])</span>
+<span id="cb7-83"><a href="#cb7-83" aria-hidden="true" tabindex="-1"></a>maxt_noprior_3 <span class="ot">=</span> <span class="fu">sum</span>(data_ma<span class="sc">$</span>tg[chosen_indices_noprior])</span>
+<span id="cb7-84"><a href="#cb7-84" aria-hidden="true" tabindex="-1"></a>prior_ma_3 <span class="ot">=</span> <span class="fu">fun_predict_stan_results</span>(mod_analytes_sim, datastruct_prior_ma, inits, chosen_indices_prior, <span class="dv">10</span>) </span>
+<span id="cb7-85"><a href="#cb7-85" aria-hidden="true" tabindex="-1"></a>noprior_ma_3 <span class="ot">=</span> <span class="fu">fun_predict_stan_results</span>(mod_analytes_sim, datastruct_noprior_ma, inits, chosen_indices_noprior, <span class="dv">10</span>) </span>
+<span id="cb7-86"><a href="#cb7-86" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-87"><a href="#cb7-87" aria-hidden="true" tabindex="-1"></a>chosen_indices_prior   <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">209</span>,<span class="dv">210</span>,<span class="dv">215</span>,<span class="dv">79</span>) <span class="co"># p=4</span></span>
+<span id="cb7-88"><a href="#cb7-88" aria-hidden="true" tabindex="-1"></a>chosen_indices_noprior <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">209</span>,<span class="dv">210</span>,<span class="dv">215</span>,<span class="dv">71</span>) <span class="co"># p=4</span></span>
+<span id="cb7-89"><a href="#cb7-89" aria-hidden="true" tabindex="-1"></a>maxt_prior_4 <span class="ot">=</span> <span class="fu">sum</span>(data_ma<span class="sc">$</span>tg[chosen_indices_prior])</span>
+<span id="cb7-90"><a href="#cb7-90" aria-hidden="true" tabindex="-1"></a>maxt_noprior_4 <span class="ot">=</span> <span class="fu">sum</span>(data_ma<span class="sc">$</span>tg[chosen_indices_noprior])</span>
+<span id="cb7-91"><a href="#cb7-91" aria-hidden="true" tabindex="-1"></a>prior_ma_4 <span class="ot">=</span> <span class="fu">fun_predict_stan_results</span>(mod_analytes_sim, datastruct_prior_ma, inits, chosen_indices_prior, <span class="dv">10</span>) </span>
+<span id="cb7-92"><a href="#cb7-92" aria-hidden="true" tabindex="-1"></a>noprior_ma_4 <span class="ot">=</span> <span class="fu">fun_predict_stan_results</span>(mod_analytes_sim, datastruct_noprior_ma, inits, chosen_indices_noprior, <span class="dv">10</span>)</span>
+<span id="cb7-93"><a href="#cb7-93" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-94"><a href="#cb7-94" aria-hidden="true" tabindex="-1"></a>chosen_indices_prior <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">210</span>,<span class="dv">209</span>,<span class="dv">212</span>,<span class="dv">215</span>,<span class="dv">79</span>) <span class="co"># p=5</span></span>
+<span id="cb7-95"><a href="#cb7-95" aria-hidden="true" tabindex="-1"></a>chosen_indices_noprior <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">210</span>,<span class="dv">209</span>,<span class="dv">212</span>,<span class="dv">215</span>,<span class="dv">71</span>) <span class="co"># p=5</span></span>
+<span id="cb7-96"><a href="#cb7-96" aria-hidden="true" tabindex="-1"></a>maxt_prior_5 <span class="ot">=</span> <span class="fu">sum</span>(data_ma<span class="sc">$</span>tg[chosen_indices_prior])</span>
+<span id="cb7-97"><a href="#cb7-97" aria-hidden="true" tabindex="-1"></a>maxt_noprior_5 <span class="ot">=</span> <span class="fu">sum</span>(data_ma<span class="sc">$</span>tg[chosen_indices_noprior])</span>
+<span id="cb7-98"><a href="#cb7-98" aria-hidden="true" tabindex="-1"></a>prior_ma_5 <span class="ot">=</span> <span class="fu">fun_predict_stan_results</span>(mod_analytes_sim, datastruct_prior_ma, inits, chosen_indices_prior, <span class="dv">10</span>) </span>
+<span id="cb7-99"><a href="#cb7-99" aria-hidden="true" tabindex="-1"></a>noprior_ma_5 <span class="ot">=</span> <span class="fu">fun_predict_stan_results</span>(mod_analytes_sim, datastruct_noprior_ma, inits, chosen_indices_noprior, <span class="dv">10</span>) </span>
+<span id="cb7-100"><a href="#cb7-100" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-101"><a href="#cb7-101" aria-hidden="true" tabindex="-1"></a>iresults <span class="ot">=</span> <span class="fu">rbind</span>(prior_ma_ref<span class="sc">$</span>iresults<span class="sc">%&gt;%</span></span>
+<span id="cb7-102"><a href="#cb7-102" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">mutate</span>(<span class="at">method =</span><span class="st">"prior_ref"</span>, <span class="at">maxt =</span> maxt_prior_ref),</span>
+<span id="cb7-103"><a href="#cb7-103" aria-hidden="true" tabindex="-1"></a>                 noprior_ma_ref<span class="sc">$</span>iresults<span class="sc">%&gt;%</span></span>
+<span id="cb7-104"><a href="#cb7-104" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">mutate</span>(<span class="at">method =</span><span class="st">"noprior_ref"</span>, <span class="at">maxt =</span> maxt_noprior_ref),</span>
+<span id="cb7-105"><a href="#cb7-105" aria-hidden="true" tabindex="-1"></a>                prior_ma_2<span class="sc">$</span>iresults<span class="sc">%&gt;%</span></span>
+<span id="cb7-106"><a href="#cb7-106" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">mutate</span>(<span class="at">method =</span><span class="st">"prior_2"</span>, <span class="at">maxt =</span> maxt_prior_2),</span>
+<span id="cb7-107"><a href="#cb7-107" aria-hidden="true" tabindex="-1"></a>                 prior_ma_3<span class="sc">$</span>iresults<span class="sc">%&gt;%</span></span>
+<span id="cb7-108"><a href="#cb7-108" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">mutate</span>(<span class="at">method =</span><span class="st">"prior_3"</span>, <span class="at">maxt =</span> maxt_prior_3),</span>
+<span id="cb7-109"><a href="#cb7-109" aria-hidden="true" tabindex="-1"></a>                 noprior_ma_3<span class="sc">$</span>iresults<span class="sc">%&gt;%</span></span>
+<span id="cb7-110"><a href="#cb7-110" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">mutate</span>(<span class="at">method =</span><span class="st">"noprior_3"</span>, <span class="at">maxt =</span> maxt_noprior_3),</span>
+<span id="cb7-111"><a href="#cb7-111" aria-hidden="true" tabindex="-1"></a>                 prior_ma_4<span class="sc">$</span>iresults<span class="sc">%&gt;%</span></span>
+<span id="cb7-112"><a href="#cb7-112" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">mutate</span>(<span class="at">method =</span><span class="st">"prior_4"</span>, <span class="at">maxt =</span> maxt_prior_4),</span>
+<span id="cb7-113"><a href="#cb7-113" aria-hidden="true" tabindex="-1"></a>                 noprior_ma_4<span class="sc">$</span>iresults<span class="sc">%&gt;%</span></span>
+<span id="cb7-114"><a href="#cb7-114" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">mutate</span>(<span class="at">method =</span><span class="st">"noprior_4"</span>, <span class="at">maxt =</span> maxt_noprior_4),</span>
+<span id="cb7-115"><a href="#cb7-115" aria-hidden="true" tabindex="-1"></a>                 prior_ma_5<span class="sc">$</span>iresults<span class="sc">%&gt;%</span></span>
+<span id="cb7-116"><a href="#cb7-116" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">mutate</span>(<span class="at">method =</span><span class="st">"prior_5"</span>, <span class="at">maxt =</span> maxt_prior_5),</span>
+<span id="cb7-117"><a href="#cb7-117" aria-hidden="true" tabindex="-1"></a>                 noprior_ma_5<span class="sc">$</span>iresults<span class="sc">%&gt;%</span></span>
+<span id="cb7-118"><a href="#cb7-118" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">mutate</span>(<span class="at">method =</span><span class="st">"noprior_5"</span>, <span class="at">maxt =</span> maxt_noprior_5))<span class="sc">%&gt;%</span></span>
+<span id="cb7-119"><a href="#cb7-119" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">ivar =</span> <span class="fu">if_else</span>(ivar<span class="sc">&gt;</span><span class="fl">1e6</span>,<span class="fl">1e6</span>,ivar)) <span class="sc">%&gt;%</span></span>
+<span id="cb7-120"><a href="#cb7-120" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(<span class="fu">tibble</span>(<span class="at">i=</span><span class="fu">as.factor</span>(<span class="fu">seq</span>(<span class="dv">1</span>,nAnalytes<span class="sc">*</span>n_rep,<span class="dv">1</span>)),<span class="at">logP=</span>logP, <span class="at">Type=</span>NAB))<span class="sc">%&gt;%</span></span>
+<span id="cb7-121"><a href="#cb7-121" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">fr_tg=</span>fr_tg)</span>
+<span id="cb7-122"><a href="#cb7-122" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-123"><a href="#cb7-123" aria-hidden="true" tabindex="-1"></a><span class="fu">return</span>(iresults)</span>
+<span id="cb7-124"><a href="#cb7-124" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <div class="cell">
@@ -1211,398 +1179,387 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 <span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb22-18"><a href="#cb22-18" aria-hidden="true" tabindex="-1"></a><span class="in">```{r setuphtml, include=FALSE}</span></span>
 <span id="cb22-19"><a href="#cb22-19" aria-hidden="true" tabindex="-1"></a><span class="in">knitr::opts_chunk$set(cache=TRUE, message=FALSE, error=FALSE, warning=FALSE, comment=NA, out.width='95%')</span></span>
-<span id="cb22-20"><a href="#cb22-20" aria-hidden="true" tabindex="-1"></a><span class="in">#usethis::create_github_token()</span></span>
-<span id="cb22-21"><a href="#cb22-21" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb22-22"><a href="#cb22-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-23"><a href="#cb22-23" aria-hidden="true" tabindex="-1"></a><span class="fu"># Setup</span></span>
-<span id="cb22-24"><a href="#cb22-24" aria-hidden="true" tabindex="-1"></a><span class="in">```{r setup}</span></span>
-<span id="cb22-25"><a href="#cb22-25" aria-hidden="true" tabindex="-1"></a><span class="in">library(cmdstanr)</span></span>
-<span id="cb22-26"><a href="#cb22-26" aria-hidden="true" tabindex="-1"></a><span class="in">library(pracma)</span></span>
-<span id="cb22-27"><a href="#cb22-27" aria-hidden="true" tabindex="-1"></a><span class="in">library(numDeriv)</span></span>
-<span id="cb22-28"><a href="#cb22-28" aria-hidden="true" tabindex="-1"></a><span class="in">library(dplyr)</span></span>
-<span id="cb22-29"><a href="#cb22-29" aria-hidden="true" tabindex="-1"></a><span class="in">library(ggplot2)</span></span>
-<span id="cb22-30"><a href="#cb22-30" aria-hidden="true" tabindex="-1"></a><span class="in">library(mvtnorm)</span></span>
-<span id="cb22-31"><a href="#cb22-31" aria-hidden="true" tabindex="-1"></a><span class="in">library(tidyr)</span></span>
-<span id="cb22-32"><a href="#cb22-32" aria-hidden="true" tabindex="-1"></a><span class="in">library(purrr)</span></span>
-<span id="cb22-33"><a href="#cb22-33" aria-hidden="true" tabindex="-1"></a><span class="in">library(mrgmisc)</span></span>
-<span id="cb22-34"><a href="#cb22-34" aria-hidden="true" tabindex="-1"></a><span class="in">library(patchwork)</span></span>
-<span id="cb22-35"><a href="#cb22-35" aria-hidden="true" tabindex="-1"></a><span class="in">library(stringr)</span></span>
-<span id="cb22-36"><a href="#cb22-36" aria-hidden="true" tabindex="-1"></a><span class="in">library(reshape2)</span></span>
-<span id="cb22-37"><a href="#cb22-37" aria-hidden="true" tabindex="-1"></a><span class="in">library(here)</span></span>
-<span id="cb22-38"><a href="#cb22-38" aria-hidden="true" tabindex="-1"></a><span class="in">library(tibble)</span></span>
-<span id="cb22-39"><a href="#cb22-39" aria-hidden="true" tabindex="-1"></a><span class="in">library(flextable)</span></span>
-<span id="cb22-40"><a href="#cb22-40" aria-hidden="true" tabindex="-1"></a><span class="in">select = dplyr::select</span></span>
-<span id="cb22-41"><a href="#cb22-41" aria-hidden="true" tabindex="-1"></a><span class="in"># remotes::install_github("metrumresearchgroup/mrgmisc")</span></span>
-<span id="cb22-42"><a href="#cb22-42" aria-hidden="true" tabindex="-1"></a><span class="in"># for parallel calculation use linux (mclaplly), i.e. Ubuntu 24.04 on Windows WSL</span></span>
-<span id="cb22-43"><a href="#cb22-43" aria-hidden="true" tabindex="-1"></a><span class="in">#' Helper functions</span></span>
-<span id="cb22-44"><a href="#cb22-44" aria-hidden="true" tabindex="-1"></a><span class="in">source("helper_functions.R")</span></span>
-<span id="cb22-45"><a href="#cb22-45" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb22-46"><a href="#cb22-46" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-47"><a href="#cb22-47" aria-hidden="true" tabindex="-1"></a><span class="in">```{r paths}</span></span>
-<span id="cb22-48"><a href="#cb22-48" aria-hidden="true" tabindex="-1"></a><span class="in">#' folder shortcuts:</span></span>
-<span id="cb22-49"><a href="#cb22-49" aria-hidden="true" tabindex="-1"></a><span class="in">figures_dir1 &lt;- here("deliv", "figures", "manuscript")</span></span>
-<span id="cb22-50"><a href="#cb22-50" aria-hidden="true" tabindex="-1"></a><span class="in">tables_dir1  &lt;- here("deliv", "tables", "manuscript")</span></span>
-<span id="cb22-51"><a href="#cb22-51" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-52"><a href="#cb22-52" aria-hidden="true" tabindex="-1"></a><span class="in">if (!file.exists(figures_dir1)) dir.create(figures_dir1, recursive = T)</span></span>
-<span id="cb22-53"><a href="#cb22-53" aria-hidden="true" tabindex="-1"></a><span class="in">if (!file.exists(tables_dir1)) dir.create(tables_dir1, recursive = T)</span></span>
-<span id="cb22-54"><a href="#cb22-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-55"><a href="#cb22-55" aria-hidden="true" tabindex="-1"></a><span class="in">thisScript &lt;- "optimal-design-for-mixtures-compare-tg-v2"</span></span>
-<span id="cb22-56"><a href="#cb22-56" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb22-57"><a href="#cb22-57" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-58"><a href="#cb22-58" aria-hidden="true" tabindex="-1"></a><span class="in">```{r helper-save-functions}</span></span>
-<span id="cb22-59"><a href="#cb22-59" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave &lt;- function(.plot, .filename, .path=figures_dir, .height= 7, .width= 6) {</span></span>
-<span id="cb22-60"><a href="#cb22-60" aria-hidden="true" tabindex="-1"></a><span class="in">ggsave(plot=.plot, filename=.filename, path=.path, height=.height, width=.width)</span></span>
-<span id="cb22-61"><a href="#cb22-61" aria-hidden="true" tabindex="-1"></a><span class="in">}</span></span>
-<span id="cb22-62"><a href="#cb22-62" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave.png &lt;- function(.plot, .filename, .path=figures_dir, .height=7, .width= 6) {</span></span>
-<span id="cb22-63"><a href="#cb22-63" aria-hidden="true" tabindex="-1"></a><span class="in">ggsave(plot=.plot, filename=.filename, path=.path, height=.height, width=.width)</span></span>
-<span id="cb22-64"><a href="#cb22-64" aria-hidden="true" tabindex="-1"></a><span class="in">}</span></span>
-<span id="cb22-65"><a href="#cb22-65" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb22-66"><a href="#cb22-66" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-67"><a href="#cb22-67" aria-hidden="true" tabindex="-1"></a><span class="fu"># Introduction</span></span>
-<span id="cb22-68"><a href="#cb22-68" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-69"><a href="#cb22-69" aria-hidden="true" tabindex="-1"></a><span class="fu"># Priors</span></span>
-<span id="cb22-70"><a href="#cb22-70" aria-hidden="true" tabindex="-1"></a>Priors are based on the following article "Comparison of Chromatographic Stationary Phases Using a Bayesian-Based Multilevel Model" by Paweł Wiczling and Agnieszka Kamedulska published in Analytical Chemistry 2024 96 (3), 1310-1319. In this work a simplified approach is taken with the focus on the neutral, acidic and basic forms of analytes and a single chromatographic stationary phase (Xbridge), assuming the pKa and changes of pKa with organic modifier are known.</span>
-<span id="cb22-71"><a href="#cb22-71" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-72"><a href="#cb22-72" aria-hidden="true" tabindex="-1"></a><span class="in">```{r literature-priors}</span></span>
-<span id="cb22-73"><a href="#cb22-73" aria-hidden="true" tabindex="-1"></a><span class="in"># fun_generate_priors defined in helper_functions.R</span></span>
-<span id="cb22-74"><a href="#cb22-74" aria-hidden="true" tabindex="-1"></a><span class="in">priorsN_MeOH=fun_generate_priors("N_MeOH", logP=2.2)</span></span>
-<span id="cb22-75"><a href="#cb22-75" aria-hidden="true" tabindex="-1"></a><span class="in">priorsN_ACN=fun_generate_priors("N_ACN", logP=2.2)</span></span>
-<span id="cb22-76"><a href="#cb22-76" aria-hidden="true" tabindex="-1"></a><span class="in">priorsN=fun_generate_priors("N", logP=2.2)</span></span>
-<span id="cb22-77"><a href="#cb22-77" aria-hidden="true" tabindex="-1"></a><span class="in">priorsA=fun_generate_priors("A", logP=2.2)</span></span>
-<span id="cb22-78"><a href="#cb22-78" aria-hidden="true" tabindex="-1"></a><span class="in">priorsB=fun_generate_priors("B", logP=2.2)</span></span>
-<span id="cb22-79"><a href="#cb22-79" aria-hidden="true" tabindex="-1"></a><span class="in">priorsNB=fun_generate_priors("NB", logP=2.2)</span></span>
-<span id="cb22-80"><a href="#cb22-80" aria-hidden="true" tabindex="-1"></a><span class="in">priorsNA=fun_generate_priors("NA", logP=2.2)</span></span>
-<span id="cb22-81"><a href="#cb22-81" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb22-82"><a href="#cb22-82" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-83"><a href="#cb22-83" aria-hidden="true" tabindex="-1"></a><span class="fu"># Stan multiple analytes. Single form analytes. fi and tg for MeOH and ACN as design variables</span></span>
-<span id="cb22-84"><a href="#cb22-84" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-85"><a href="#cb22-85" aria-hidden="true" tabindex="-1"></a><span class="fu"># Compile stan models</span></span>
-<span id="cb22-86"><a href="#cb22-86" aria-hidden="true" tabindex="-1"></a><span class="in">```{r single-form-analytes-compilation}</span></span>
-<span id="cb22-87"><a href="#cb22-87" aria-hidden="true" tabindex="-1"></a><span class="in">mod_analytes_gq= cmdstan_model("../stan/hplc-gra-single-form-analytes-gq.stan", stanc_options = list("O1"))</span></span>
-<span id="cb22-88"><a href="#cb22-88" aria-hidden="true" tabindex="-1"></a><span class="in">mod_analytes_sim = cmdstan_model("../stan/hplc-gra-single-form-analytes-sim-v2.stan", stanc_options = list("O1"))</span></span>
-<span id="cb22-89"><a href="#cb22-89" aria-hidden="true" tabindex="-1"></a><span class="in">mod_analytes = cmdstan_model("../stan/hplc-gra-single-form-analytes.stan", stanc_options = list("O1"))</span></span>
-<span id="cb22-90"><a href="#cb22-90" aria-hidden="true" tabindex="-1"></a><span class="in">mod_analytes$compile(compile_model_methods=TRUE,force_recompile=TRUE)</span></span>
-<span id="cb22-91"><a href="#cb22-91" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb22-92"><a href="#cb22-92" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-93"><a href="#cb22-93" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-94"><a href="#cb22-94" aria-hidden="true" tabindex="-1"></a><span class="in">```{r fun-helpers}</span></span>
-<span id="cb22-95"><a href="#cb22-95" aria-hidden="true" tabindex="-1"></a><span class="in"># to avoid recalculations</span></span>
-<span id="cb22-96"><a href="#cb22-96" aria-hidden="true" tabindex="-1"></a><span class="in">mean_log_det_stan = function(data, init, chosen_indices, S){</span></span>
-<span id="cb22-97"><a href="#cb22-97" aria-hidden="true" tabindex="-1"></a><span class="in">  </span></span>
-<span id="cb22-98"><a href="#cb22-98" aria-hidden="true" tabindex="-1"></a><span class="in">init_ma = function(){list(param=init)}</span></span>
-<span id="cb22-99"><a href="#cb22-99" aria-hidden="true" tabindex="-1"></a><span class="in">  </span></span>
-<span id="cb22-100"><a href="#cb22-100" aria-hidden="true" tabindex="-1"></a><span class="in">data$selected = chosen_indices;</span></span>
-<span id="cb22-101"><a href="#cb22-101" aria-hidden="true" tabindex="-1"></a><span class="in">data$nSel = length(chosen_indices);</span></span>
-<span id="cb22-102"><a href="#cb22-102" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-103"><a href="#cb22-103" aria-hidden="true" tabindex="-1"></a><span class="in"> fit_opt  = mod_analytes$optimize(</span></span>
-<span id="cb22-104"><a href="#cb22-104" aria-hidden="true" tabindex="-1"></a><span class="in">   data = data,</span></span>
-<span id="cb22-105"><a href="#cb22-105" aria-hidden="true" tabindex="-1"></a><span class="in">   output_dir = here::here("stanfiles"),</span></span>
-<span id="cb22-106"><a href="#cb22-106" aria-hidden="true" tabindex="-1"></a><span class="in">   output_basename = S,</span></span>
-<span id="cb22-107"><a href="#cb22-107" aria-hidden="true" tabindex="-1"></a><span class="in">   seed = cseed,</span></span>
-<span id="cb22-108"><a href="#cb22-108" aria-hidden="true" tabindex="-1"></a><span class="in">   init = init_ma,</span></span>
-<span id="cb22-109"><a href="#cb22-109" aria-hidden="true" tabindex="-1"></a><span class="in">   jacobian = TRUE,</span></span>
-<span id="cb22-110"><a href="#cb22-110" aria-hidden="true" tabindex="-1"></a><span class="in">   show_messages = F)</span></span>
-<span id="cb22-111"><a href="#cb22-111" aria-hidden="true" tabindex="-1"></a><span class="in"> </span></span>
-<span id="cb22-112"><a href="#cb22-112" aria-hidden="true" tabindex="-1"></a><span class="in"> mode=fit_opt$unconstrain_variables(list(param = fit_opt$mle("param")))</span></span>
-<span id="cb22-113"><a href="#cb22-113" aria-hidden="true" tabindex="-1"></a><span class="in"> hessian = fit_opt$hessian(unconstrained_variables = mode)$hessian</span></span>
+<span id="cb22-20"><a href="#cb22-20" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb22-21"><a href="#cb22-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-22"><a href="#cb22-22" aria-hidden="true" tabindex="-1"></a><span class="fu"># Setup</span></span>
+<span id="cb22-23"><a href="#cb22-23" aria-hidden="true" tabindex="-1"></a><span class="in">```{r setup}</span></span>
+<span id="cb22-24"><a href="#cb22-24" aria-hidden="true" tabindex="-1"></a><span class="in">library(cmdstanr)</span></span>
+<span id="cb22-25"><a href="#cb22-25" aria-hidden="true" tabindex="-1"></a><span class="in">library(pracma)</span></span>
+<span id="cb22-26"><a href="#cb22-26" aria-hidden="true" tabindex="-1"></a><span class="in">library(numDeriv)</span></span>
+<span id="cb22-27"><a href="#cb22-27" aria-hidden="true" tabindex="-1"></a><span class="in">library(dplyr)</span></span>
+<span id="cb22-28"><a href="#cb22-28" aria-hidden="true" tabindex="-1"></a><span class="in">library(ggplot2)</span></span>
+<span id="cb22-29"><a href="#cb22-29" aria-hidden="true" tabindex="-1"></a><span class="in">library(mvtnorm)</span></span>
+<span id="cb22-30"><a href="#cb22-30" aria-hidden="true" tabindex="-1"></a><span class="in">library(tidyr)</span></span>
+<span id="cb22-31"><a href="#cb22-31" aria-hidden="true" tabindex="-1"></a><span class="in">library(purrr)</span></span>
+<span id="cb22-32"><a href="#cb22-32" aria-hidden="true" tabindex="-1"></a><span class="in">library(mrgmisc)</span></span>
+<span id="cb22-33"><a href="#cb22-33" aria-hidden="true" tabindex="-1"></a><span class="in">library(patchwork)</span></span>
+<span id="cb22-34"><a href="#cb22-34" aria-hidden="true" tabindex="-1"></a><span class="in">library(stringr)</span></span>
+<span id="cb22-35"><a href="#cb22-35" aria-hidden="true" tabindex="-1"></a><span class="in">library(reshape2)</span></span>
+<span id="cb22-36"><a href="#cb22-36" aria-hidden="true" tabindex="-1"></a><span class="in">library(here)</span></span>
+<span id="cb22-37"><a href="#cb22-37" aria-hidden="true" tabindex="-1"></a><span class="in">library(tibble)</span></span>
+<span id="cb22-38"><a href="#cb22-38" aria-hidden="true" tabindex="-1"></a><span class="in">library(flextable)</span></span>
+<span id="cb22-39"><a href="#cb22-39" aria-hidden="true" tabindex="-1"></a><span class="in">select = dplyr::select</span></span>
+<span id="cb22-40"><a href="#cb22-40" aria-hidden="true" tabindex="-1"></a><span class="in"># remotes::install_github("metrumresearchgroup/mrgmisc")</span></span>
+<span id="cb22-41"><a href="#cb22-41" aria-hidden="true" tabindex="-1"></a><span class="in"># for parallel calculation use linux (mclaplly), i.e. Ubuntu 24.04 on Windows WSL</span></span>
+<span id="cb22-42"><a href="#cb22-42" aria-hidden="true" tabindex="-1"></a><span class="in">#' Helper functions</span></span>
+<span id="cb22-43"><a href="#cb22-43" aria-hidden="true" tabindex="-1"></a><span class="in">source("helper_functions.R")</span></span>
+<span id="cb22-44"><a href="#cb22-44" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb22-45"><a href="#cb22-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-46"><a href="#cb22-46" aria-hidden="true" tabindex="-1"></a><span class="in">```{r paths}</span></span>
+<span id="cb22-47"><a href="#cb22-47" aria-hidden="true" tabindex="-1"></a><span class="in">#' folder shortcuts:</span></span>
+<span id="cb22-48"><a href="#cb22-48" aria-hidden="true" tabindex="-1"></a><span class="in">figures_dir1 &lt;- here("deliv", "figures", "manuscript")</span></span>
+<span id="cb22-49"><a href="#cb22-49" aria-hidden="true" tabindex="-1"></a><span class="in">tables_dir1  &lt;- here("deliv", "tables", "manuscript")</span></span>
+<span id="cb22-50"><a href="#cb22-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-51"><a href="#cb22-51" aria-hidden="true" tabindex="-1"></a><span class="in">if (!file.exists(figures_dir1)) dir.create(figures_dir1, recursive = T)</span></span>
+<span id="cb22-52"><a href="#cb22-52" aria-hidden="true" tabindex="-1"></a><span class="in">if (!file.exists(tables_dir1)) dir.create(tables_dir1, recursive = T)</span></span>
+<span id="cb22-53"><a href="#cb22-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-54"><a href="#cb22-54" aria-hidden="true" tabindex="-1"></a><span class="in">thisScript &lt;- "optimal-design-for-mixtures-compare-tg-v2"</span></span>
+<span id="cb22-55"><a href="#cb22-55" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb22-56"><a href="#cb22-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-57"><a href="#cb22-57" aria-hidden="true" tabindex="-1"></a><span class="in">```{r helper-save-functions}</span></span>
+<span id="cb22-58"><a href="#cb22-58" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave &lt;- function(.plot, .filename, .path=figures_dir, .height= 7, .width= 6) {</span></span>
+<span id="cb22-59"><a href="#cb22-59" aria-hidden="true" tabindex="-1"></a><span class="in">ggsave(plot=.plot, filename=.filename, path=.path, height=.height, width=.width)</span></span>
+<span id="cb22-60"><a href="#cb22-60" aria-hidden="true" tabindex="-1"></a><span class="in">}</span></span>
+<span id="cb22-61"><a href="#cb22-61" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave.png &lt;- function(.plot, .filename, .path=figures_dir, .height=7, .width= 6) {</span></span>
+<span id="cb22-62"><a href="#cb22-62" aria-hidden="true" tabindex="-1"></a><span class="in">ggsave(plot=.plot, filename=.filename, path=.path, height=.height, width=.width)</span></span>
+<span id="cb22-63"><a href="#cb22-63" aria-hidden="true" tabindex="-1"></a><span class="in">}</span></span>
+<span id="cb22-64"><a href="#cb22-64" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb22-65"><a href="#cb22-65" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-66"><a href="#cb22-66" aria-hidden="true" tabindex="-1"></a><span class="fu"># Introduction</span></span>
+<span id="cb22-67"><a href="#cb22-67" aria-hidden="true" tabindex="-1"></a><span class="fu"># Priors</span></span>
+<span id="cb22-68"><a href="#cb22-68" aria-hidden="true" tabindex="-1"></a><span class="in">```{r literature-priors}</span></span>
+<span id="cb22-69"><a href="#cb22-69" aria-hidden="true" tabindex="-1"></a><span class="in"># fun_generate_priors defined in helper_functions.R</span></span>
+<span id="cb22-70"><a href="#cb22-70" aria-hidden="true" tabindex="-1"></a><span class="in">priorsN_MeOH=fun_generate_priors("N_MeOH", logP=2.2)</span></span>
+<span id="cb22-71"><a href="#cb22-71" aria-hidden="true" tabindex="-1"></a><span class="in">priorsN_ACN=fun_generate_priors("N_ACN", logP=2.2)</span></span>
+<span id="cb22-72"><a href="#cb22-72" aria-hidden="true" tabindex="-1"></a><span class="in">priorsN=fun_generate_priors("N", logP=2.2)</span></span>
+<span id="cb22-73"><a href="#cb22-73" aria-hidden="true" tabindex="-1"></a><span class="in">priorsA=fun_generate_priors("A", logP=2.2)</span></span>
+<span id="cb22-74"><a href="#cb22-74" aria-hidden="true" tabindex="-1"></a><span class="in">priorsB=fun_generate_priors("B", logP=2.2)</span></span>
+<span id="cb22-75"><a href="#cb22-75" aria-hidden="true" tabindex="-1"></a><span class="in">priorsNB=fun_generate_priors("NB", logP=2.2)</span></span>
+<span id="cb22-76"><a href="#cb22-76" aria-hidden="true" tabindex="-1"></a><span class="in">priorsNA=fun_generate_priors("NA", logP=2.2)</span></span>
+<span id="cb22-77"><a href="#cb22-77" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb22-78"><a href="#cb22-78" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-79"><a href="#cb22-79" aria-hidden="true" tabindex="-1"></a><span class="fu"># Stan multiple analytes. Single form analytes. fi and tg for MeOH and ACN as design variables</span></span>
+<span id="cb22-80"><a href="#cb22-80" aria-hidden="true" tabindex="-1"></a><span class="fu"># Compile stan models</span></span>
+<span id="cb22-81"><a href="#cb22-81" aria-hidden="true" tabindex="-1"></a><span class="in">```{r single-form-analytes-compilation}</span></span>
+<span id="cb22-82"><a href="#cb22-82" aria-hidden="true" tabindex="-1"></a><span class="in">mod_analytes_gq= cmdstan_model("../stan/hplc-gra-single-form-analytes-gq.stan", stanc_options = list("O1"))</span></span>
+<span id="cb22-83"><a href="#cb22-83" aria-hidden="true" tabindex="-1"></a><span class="in">mod_analytes_sim = cmdstan_model("../stan/hplc-gra-single-form-analytes-sim-v2.stan", stanc_options = list("O1"))</span></span>
+<span id="cb22-84"><a href="#cb22-84" aria-hidden="true" tabindex="-1"></a><span class="in">mod_analytes = cmdstan_model("../stan/hplc-gra-single-form-analytes.stan", stanc_options = list("O1"))</span></span>
+<span id="cb22-85"><a href="#cb22-85" aria-hidden="true" tabindex="-1"></a><span class="in">mod_analytes$compile(compile_model_methods=TRUE,force_recompile=TRUE)</span></span>
+<span id="cb22-86"><a href="#cb22-86" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb22-87"><a href="#cb22-87" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-88"><a href="#cb22-88" aria-hidden="true" tabindex="-1"></a><span class="in">```{r fun-helpers}</span></span>
+<span id="cb22-89"><a href="#cb22-89" aria-hidden="true" tabindex="-1"></a><span class="in"># to avoid recalculations</span></span>
+<span id="cb22-90"><a href="#cb22-90" aria-hidden="true" tabindex="-1"></a><span class="in">mean_log_det_stan = function(data, init, chosen_indices, S){</span></span>
+<span id="cb22-91"><a href="#cb22-91" aria-hidden="true" tabindex="-1"></a><span class="in">  </span></span>
+<span id="cb22-92"><a href="#cb22-92" aria-hidden="true" tabindex="-1"></a><span class="in">init_ma = function(){list(param=init)}</span></span>
+<span id="cb22-93"><a href="#cb22-93" aria-hidden="true" tabindex="-1"></a><span class="in">  </span></span>
+<span id="cb22-94"><a href="#cb22-94" aria-hidden="true" tabindex="-1"></a><span class="in">data$selected = chosen_indices;</span></span>
+<span id="cb22-95"><a href="#cb22-95" aria-hidden="true" tabindex="-1"></a><span class="in">data$nSel = length(chosen_indices);</span></span>
+<span id="cb22-96"><a href="#cb22-96" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-97"><a href="#cb22-97" aria-hidden="true" tabindex="-1"></a><span class="in"> fit_opt  = mod_analytes$optimize(</span></span>
+<span id="cb22-98"><a href="#cb22-98" aria-hidden="true" tabindex="-1"></a><span class="in">   data = data,</span></span>
+<span id="cb22-99"><a href="#cb22-99" aria-hidden="true" tabindex="-1"></a><span class="in">   output_dir = here::here("stanfiles"),</span></span>
+<span id="cb22-100"><a href="#cb22-100" aria-hidden="true" tabindex="-1"></a><span class="in">   output_basename = S,</span></span>
+<span id="cb22-101"><a href="#cb22-101" aria-hidden="true" tabindex="-1"></a><span class="in">   seed = cseed,</span></span>
+<span id="cb22-102"><a href="#cb22-102" aria-hidden="true" tabindex="-1"></a><span class="in">   init = init_ma,</span></span>
+<span id="cb22-103"><a href="#cb22-103" aria-hidden="true" tabindex="-1"></a><span class="in">   jacobian = TRUE,</span></span>
+<span id="cb22-104"><a href="#cb22-104" aria-hidden="true" tabindex="-1"></a><span class="in">   show_messages = F)</span></span>
+<span id="cb22-105"><a href="#cb22-105" aria-hidden="true" tabindex="-1"></a><span class="in"> </span></span>
+<span id="cb22-106"><a href="#cb22-106" aria-hidden="true" tabindex="-1"></a><span class="in"> mode=fit_opt$unconstrain_variables(list(param = fit_opt$mle("param")))</span></span>
+<span id="cb22-107"><a href="#cb22-107" aria-hidden="true" tabindex="-1"></a><span class="in"> hessian = fit_opt$hessian(unconstrained_variables = mode)$hessian</span></span>
+<span id="cb22-108"><a href="#cb22-108" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-109"><a href="#cb22-109" aria-hidden="true" tabindex="-1"></a><span class="in">logdet = unlist(purrr::map(1:data$nAnalytes,\(i) log(det(-hessian[((i-1)*3+1):((i-1)*3+3),((i-1)*3+1):((i-1)*3+3)]))))</span></span>
+<span id="cb22-110"><a href="#cb22-110" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-111"><a href="#cb22-111" aria-hidden="true" tabindex="-1"></a><span class="in">return(logdet)</span></span>
+<span id="cb22-112"><a href="#cb22-112" aria-hidden="true" tabindex="-1"></a><span class="in">}</span></span>
+<span id="cb22-113"><a href="#cb22-113" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb22-114"><a href="#cb22-114" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-115"><a href="#cb22-115" aria-hidden="true" tabindex="-1"></a><span class="in">logdet = unlist(purrr::map(1:data$nAnalytes,\(i) log(det(-hessian[((i-1)*3+1):((i-1)*3+3),((i-1)*3+1):((i-1)*3+3)]))))</span></span>
-<span id="cb22-116"><a href="#cb22-116" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-117"><a href="#cb22-117" aria-hidden="true" tabindex="-1"></a><span class="in">return(logdet)</span></span>
-<span id="cb22-118"><a href="#cb22-118" aria-hidden="true" tabindex="-1"></a><span class="in">}</span></span>
-<span id="cb22-119"><a href="#cb22-119" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb22-120"><a href="#cb22-120" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-121"><a href="#cb22-121" aria-hidden="true" tabindex="-1"></a><span class="fu"># Simulation</span></span>
-<span id="cb22-122"><a href="#cb22-122" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-123"><a href="#cb22-123" aria-hidden="true" tabindex="-1"></a>The simulation involved n = 500 analytes with log P and analyte type (acid and base) drawn at random from the following distributions:  $logP_i \sim normal(2,2.2)$ and $Analyte_i \sim categorical(A=0.5,B=0.5)$. Log P values were truncated within 0.5 and 7. For signle pH scenarios the analyte form distribution was 40% for neutral, 30% for acidic, and 30% for basic form. </span>
-<span id="cb22-124"><a href="#cb22-124" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb22-125"><a href="#cb22-125" aria-hidden="true" tabindex="-1"></a><span class="in">```{r single-form-analytes-simfun}</span></span>
+<span id="cb22-115"><a href="#cb22-115" aria-hidden="true" tabindex="-1"></a><span class="fu"># Simulation</span></span>
+<span id="cb22-116"><a href="#cb22-116" aria-hidden="true" tabindex="-1"></a><span class="in">```{r single-form-analytes-simfun}</span></span>
+<span id="cb22-117"><a href="#cb22-117" aria-hidden="true" tabindex="-1"></a><span class="in">max_var_gra_tg &lt;- function(fr_tg=1){</span></span>
+<span id="cb22-118"><a href="#cb22-118" aria-hidden="true" tabindex="-1"></a><span class="in">hplcparam_candidates_df = expand_grid(tg=seq(10,270,by=10), </span></span>
+<span id="cb22-119"><a href="#cb22-119" aria-hidden="true" tabindex="-1"></a><span class="in">                                          td=2.1, </span></span>
+<span id="cb22-120"><a href="#cb22-120" aria-hidden="true" tabindex="-1"></a><span class="in">                                          to=0.532,</span></span>
+<span id="cb22-121"><a href="#cb22-121" aria-hidden="true" tabindex="-1"></a><span class="in">                                          te=0.04, </span></span>
+<span id="cb22-122"><a href="#cb22-122" aria-hidden="true" tabindex="-1"></a><span class="in">                                          fio = seq(0.05, 0.2, by=0.05),</span></span>
+<span id="cb22-123"><a href="#cb22-123" aria-hidden="true" tabindex="-1"></a><span class="in">                                          fif = 0.8,</span></span>
+<span id="cb22-124"><a href="#cb22-124" aria-hidden="true" tabindex="-1"></a><span class="in">                                          m=c(0,1),</span></span>
+<span id="cb22-125"><a href="#cb22-125" aria-hidden="true" tabindex="-1"></a><span class="in">                                          xpH=c(0,1))</span></span>
 <span id="cb22-126"><a href="#cb22-126" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-127"><a href="#cb22-127" aria-hidden="true" tabindex="-1"></a><span class="in">max_var_gra_tg &lt;- function(fr_tg=1){</span></span>
-<span id="cb22-128"><a href="#cb22-128" aria-hidden="true" tabindex="-1"></a><span class="in">  </span></span>
-<span id="cb22-129"><a href="#cb22-129" aria-hidden="true" tabindex="-1"></a><span class="in">hplcparam_candidates_df = expand_grid(tg=seq(10,270,by=10), </span></span>
-<span id="cb22-130"><a href="#cb22-130" aria-hidden="true" tabindex="-1"></a><span class="in">                                          td=2.1, </span></span>
-<span id="cb22-131"><a href="#cb22-131" aria-hidden="true" tabindex="-1"></a><span class="in">                                          to=0.532,</span></span>
-<span id="cb22-132"><a href="#cb22-132" aria-hidden="true" tabindex="-1"></a><span class="in">                                          te=0.04, </span></span>
-<span id="cb22-133"><a href="#cb22-133" aria-hidden="true" tabindex="-1"></a><span class="in">                                          fio = seq(0.05, 0.2, by=0.05),</span></span>
-<span id="cb22-134"><a href="#cb22-134" aria-hidden="true" tabindex="-1"></a><span class="in">                                          fif = 0.8,</span></span>
-<span id="cb22-135"><a href="#cb22-135" aria-hidden="true" tabindex="-1"></a><span class="in">                                          m=c(0,1),</span></span>
-<span id="cb22-136"><a href="#cb22-136" aria-hidden="true" tabindex="-1"></a><span class="in">                                          xpH=c(0,1))</span></span>
+<span id="cb22-127"><a href="#cb22-127" aria-hidden="true" tabindex="-1"></a><span class="in">#--------------------------------------------------------------------------------------------------</span></span>
+<span id="cb22-128"><a href="#cb22-128" aria-hidden="true" tabindex="-1"></a><span class="in">data_ma_full &lt;-hplcparam_candidates_df%&gt;%filter(xpH==0)</span></span>
+<span id="cb22-129"><a href="#cb22-129" aria-hidden="true" tabindex="-1"></a><span class="in">nObs_sim = nrow(data_ma_full)</span></span>
+<span id="cb22-130"><a href="#cb22-130" aria-hidden="true" tabindex="-1"></a><span class="in">steps_sim = 4 + 6*data_ma_full$m</span></span>
+<span id="cb22-131"><a href="#cb22-131" aria-hidden="true" tabindex="-1"></a><span class="in">hplcparam_sim=as.matrix(data_ma_full%&gt;%dplyr::select(c(tg,td,to,te,fio,fif,m)))</span></span>
+<span id="cb22-132"><a href="#cb22-132" aria-hidden="true" tabindex="-1"></a><span class="in">#--------------------------------------------------------------------------------------------------</span></span>
+<span id="cb22-133"><a href="#cb22-133" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-134"><a href="#cb22-134" aria-hidden="true" tabindex="-1"></a><span class="in">data_ma=hplcparam_candidates_df%&gt;%</span></span>
+<span id="cb22-135"><a href="#cb22-135" aria-hidden="true" tabindex="-1"></a><span class="in">mutate(tg=tg*fr_tg)%&gt;%</span></span>
+<span id="cb22-136"><a href="#cb22-136" aria-hidden="true" tabindex="-1"></a><span class="in">filter(xpH==0)</span></span>
 <span id="cb22-137"><a href="#cb22-137" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-138"><a href="#cb22-138" aria-hidden="true" tabindex="-1"></a><span class="in">#--------------------------------------------------------------------------------------------------</span></span>
-<span id="cb22-139"><a href="#cb22-139" aria-hidden="true" tabindex="-1"></a><span class="in">data_ma_full &lt;-hplcparam_candidates_df%&gt;%filter(xpH==0)</span></span>
-<span id="cb22-140"><a href="#cb22-140" aria-hidden="true" tabindex="-1"></a><span class="in">nObs_sim = nrow(data_ma_full)</span></span>
-<span id="cb22-141"><a href="#cb22-141" aria-hidden="true" tabindex="-1"></a><span class="in">steps_sim = 4 + 6*data_ma_full$m</span></span>
-<span id="cb22-142"><a href="#cb22-142" aria-hidden="true" tabindex="-1"></a><span class="in">hplcparam_sim=as.matrix(data_ma_full%&gt;%dplyr::select(c(tg,td,to,te,fio,fif,m)))</span></span>
-<span id="cb22-143"><a href="#cb22-143" aria-hidden="true" tabindex="-1"></a><span class="in">#--------------------------------------------------------------------------------------------------</span></span>
-<span id="cb22-144"><a href="#cb22-144" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-145"><a href="#cb22-145" aria-hidden="true" tabindex="-1"></a><span class="in">data_ma=hplcparam_candidates_df%&gt;%</span></span>
-<span id="cb22-146"><a href="#cb22-146" aria-hidden="true" tabindex="-1"></a><span class="in">mutate(tg=tg*fr_tg)%&gt;%</span></span>
-<span id="cb22-147"><a href="#cb22-147" aria-hidden="true" tabindex="-1"></a><span class="in">filter(xpH==0)</span></span>
-<span id="cb22-148"><a href="#cb22-148" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-149"><a href="#cb22-149" aria-hidden="true" tabindex="-1"></a><span class="in">nObs = nrow(data_ma);</span></span>
-<span id="cb22-150"><a href="#cb22-150" aria-hidden="true" tabindex="-1"></a><span class="in">nAnalytes =50;</span></span>
-<span id="cb22-151"><a href="#cb22-151" aria-hidden="true" tabindex="-1"></a><span class="in">cseed = 1234;</span></span>
-<span id="cb22-152"><a href="#cb22-152" aria-hidden="true" tabindex="-1"></a><span class="in">n_param = 3;</span></span>
-<span id="cb22-153"><a href="#cb22-153" aria-hidden="true" tabindex="-1"></a><span class="in">n_rep = 10;</span></span>
-<span id="cb22-154"><a href="#cb22-154" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-155"><a href="#cb22-155" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_noprior_ma=list()</span></span>
-<span id="cb22-156"><a href="#cb22-156" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma=list()</span></span>
-<span id="cb22-157"><a href="#cb22-157" aria-hidden="true" tabindex="-1"></a><span class="in">inits = list()</span></span>
-<span id="cb22-158"><a href="#cb22-158" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-159"><a href="#cb22-159" aria-hidden="true" tabindex="-1"></a><span class="in">for (i in 1:n_rep) {</span></span>
-<span id="cb22-160"><a href="#cb22-160" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]] = list(nObs=nObs,</span></span>
-<span id="cb22-161"><a href="#cb22-161" aria-hidden="true" tabindex="-1"></a><span class="in">                   nAnalytes=nAnalytes,</span></span>
-<span id="cb22-162"><a href="#cb22-162" aria-hidden="true" tabindex="-1"></a><span class="in">                   steps = 4 + 6*data_ma$m,</span></span>
-<span id="cb22-163"><a href="#cb22-163" aria-hidden="true" tabindex="-1"></a><span class="in">                   hplcparam=as.matrix(data_ma%&gt;%dplyr::select(c(tg,td,to,te,fio,fif,m))),</span></span>
-<span id="cb22-164"><a href="#cb22-164" aria-hidden="true" tabindex="-1"></a><span class="in">                   include_prior = 1,</span></span>
-<span id="cb22-165"><a href="#cb22-165" aria-hidden="true" tabindex="-1"></a><span class="in">                   run_estimation=1,</span></span>
-<span id="cb22-166"><a href="#cb22-166" aria-hidden="true" tabindex="-1"></a><span class="in">                   nSel = nObs,</span></span>
-<span id="cb22-167"><a href="#cb22-167" aria-hidden="true" tabindex="-1"></a><span class="in">                   selected = 1:nObs,</span></span>
-<span id="cb22-168"><a href="#cb22-168" aria-hidden="true" tabindex="-1"></a><span class="in">                   nObs_sim=nObs_sim,</span></span>
-<span id="cb22-169"><a href="#cb22-169" aria-hidden="true" tabindex="-1"></a><span class="in">                   steps_sim = steps_sim,</span></span>
-<span id="cb22-170"><a href="#cb22-170" aria-hidden="true" tabindex="-1"></a><span class="in">                   hplcparam_sim=hplcparam_sim)</span></span>
+<span id="cb22-138"><a href="#cb22-138" aria-hidden="true" tabindex="-1"></a><span class="in">nObs = nrow(data_ma);</span></span>
+<span id="cb22-139"><a href="#cb22-139" aria-hidden="true" tabindex="-1"></a><span class="in">nAnalytes =50;</span></span>
+<span id="cb22-140"><a href="#cb22-140" aria-hidden="true" tabindex="-1"></a><span class="in">cseed = 1234;</span></span>
+<span id="cb22-141"><a href="#cb22-141" aria-hidden="true" tabindex="-1"></a><span class="in">n_param = 3;</span></span>
+<span id="cb22-142"><a href="#cb22-142" aria-hidden="true" tabindex="-1"></a><span class="in">n_rep = 10;</span></span>
+<span id="cb22-143"><a href="#cb22-143" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-144"><a href="#cb22-144" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_noprior_ma=list()</span></span>
+<span id="cb22-145"><a href="#cb22-145" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma=list()</span></span>
+<span id="cb22-146"><a href="#cb22-146" aria-hidden="true" tabindex="-1"></a><span class="in">inits = list()</span></span>
+<span id="cb22-147"><a href="#cb22-147" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-148"><a href="#cb22-148" aria-hidden="true" tabindex="-1"></a><span class="in">for (i in 1:n_rep) {</span></span>
+<span id="cb22-149"><a href="#cb22-149" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]] = list(nObs=nObs,</span></span>
+<span id="cb22-150"><a href="#cb22-150" aria-hidden="true" tabindex="-1"></a><span class="in">                   nAnalytes=nAnalytes,</span></span>
+<span id="cb22-151"><a href="#cb22-151" aria-hidden="true" tabindex="-1"></a><span class="in">                   steps = 4 + 6*data_ma$m,</span></span>
+<span id="cb22-152"><a href="#cb22-152" aria-hidden="true" tabindex="-1"></a><span class="in">                   hplcparam=as.matrix(data_ma%&gt;%dplyr::select(c(tg,td,to,te,fio,fif,m))),</span></span>
+<span id="cb22-153"><a href="#cb22-153" aria-hidden="true" tabindex="-1"></a><span class="in">                   include_prior = 1,</span></span>
+<span id="cb22-154"><a href="#cb22-154" aria-hidden="true" tabindex="-1"></a><span class="in">                   run_estimation=1,</span></span>
+<span id="cb22-155"><a href="#cb22-155" aria-hidden="true" tabindex="-1"></a><span class="in">                   nSel = nObs,</span></span>
+<span id="cb22-156"><a href="#cb22-156" aria-hidden="true" tabindex="-1"></a><span class="in">                   selected = 1:nObs,</span></span>
+<span id="cb22-157"><a href="#cb22-157" aria-hidden="true" tabindex="-1"></a><span class="in">                   nObs_sim=nObs_sim,</span></span>
+<span id="cb22-158"><a href="#cb22-158" aria-hidden="true" tabindex="-1"></a><span class="in">                   steps_sim = steps_sim,</span></span>
+<span id="cb22-159"><a href="#cb22-159" aria-hidden="true" tabindex="-1"></a><span class="in">                   hplcparam_sim=hplcparam_sim)</span></span>
+<span id="cb22-160"><a href="#cb22-160" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-161"><a href="#cb22-161" aria-hidden="true" tabindex="-1"></a><span class="in">fit_gq  = mod_analytes_gq$sample(data = datastruct_prior_ma[[i]],</span></span>
+<span id="cb22-162"><a href="#cb22-162" aria-hidden="true" tabindex="-1"></a><span class="in">                                         seed = cseed,</span></span>
+<span id="cb22-163"><a href="#cb22-163" aria-hidden="true" tabindex="-1"></a><span class="in">                                         fixed_param = TRUE,</span></span>
+<span id="cb22-164"><a href="#cb22-164" aria-hidden="true" tabindex="-1"></a><span class="in">                                         chains = 1,</span></span>
+<span id="cb22-165"><a href="#cb22-165" aria-hidden="true" tabindex="-1"></a><span class="in">                                         iter_sampling=1)</span></span>
+<span id="cb22-166"><a href="#cb22-166" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-167"><a href="#cb22-167" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]]$trobs = matrix(fit_gq$draws(format = "matrix", variable = "y_hat_sim"),nAnalytes,nObs)</span></span>
+<span id="cb22-168"><a href="#cb22-168" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]]$logPobs = fit_gq$draws(format = "matrix", variable = "logPobs")[1:nAnalytes]</span></span>
+<span id="cb22-169"><a href="#cb22-169" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]]$N1A2B3 = fit_gq$draws(format = "matrix", variable = "N1A2B3")[1:nAnalytes]</span></span>
+<span id="cb22-170"><a href="#cb22-170" aria-hidden="true" tabindex="-1"></a><span class="in">param = matrix(fit_gq$draws(format = "matrix", variable = "paramsim"),nAnalytes,3)</span></span>
 <span id="cb22-171"><a href="#cb22-171" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-172"><a href="#cb22-172" aria-hidden="true" tabindex="-1"></a><span class="in">fit_gq  = mod_analytes_gq$sample(data = datastruct_prior_ma[[i]],</span></span>
-<span id="cb22-173"><a href="#cb22-173" aria-hidden="true" tabindex="-1"></a><span class="in">                                         seed = cseed,</span></span>
-<span id="cb22-174"><a href="#cb22-174" aria-hidden="true" tabindex="-1"></a><span class="in">                                         fixed_param = TRUE,</span></span>
-<span id="cb22-175"><a href="#cb22-175" aria-hidden="true" tabindex="-1"></a><span class="in">                                         chains = 1,</span></span>
-<span id="cb22-176"><a href="#cb22-176" aria-hidden="true" tabindex="-1"></a><span class="in">                                         iter_sampling=1)</span></span>
+<span id="cb22-172"><a href="#cb22-172" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-173"><a href="#cb22-173" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_noprior_ma[[i]]=datastruct_prior_ma[[i]];</span></span>
+<span id="cb22-174"><a href="#cb22-174" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_noprior_ma[[i]]$include_prior = 0.01;</span></span>
+<span id="cb22-175"><a href="#cb22-175" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-176"><a href="#cb22-176" aria-hidden="true" tabindex="-1"></a><span class="in">inits[[i]]=param</span></span>
 <span id="cb22-177"><a href="#cb22-177" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-178"><a href="#cb22-178" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]]$trobs = matrix(fit_gq$draws(format = "matrix", variable = "y_hat_sim"),nAnalytes,nObs)</span></span>
-<span id="cb22-179"><a href="#cb22-179" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]]$logPobs = fit_gq$draws(format = "matrix", variable = "logPobs")[1:nAnalytes]</span></span>
-<span id="cb22-180"><a href="#cb22-180" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_prior_ma[[i]]$N1A2B3 = fit_gq$draws(format = "matrix", variable = "N1A2B3")[1:nAnalytes]</span></span>
-<span id="cb22-181"><a href="#cb22-181" aria-hidden="true" tabindex="-1"></a><span class="in">param = matrix(fit_gq$draws(format = "matrix", variable = "paramsim"),nAnalytes,3)</span></span>
-<span id="cb22-182"><a href="#cb22-182" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-178"><a href="#cb22-178" aria-hidden="true" tabindex="-1"></a><span class="in">cseed = cseed+1</span></span>
+<span id="cb22-179"><a href="#cb22-179" aria-hidden="true" tabindex="-1"></a><span class="in">}</span></span>
+<span id="cb22-180"><a href="#cb22-180" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-181"><a href="#cb22-181" aria-hidden="true" tabindex="-1"></a><span class="in">logP = unlist(purrr::map(1:length(datastruct_noprior_ma),\(i) datastruct_noprior_ma[[i]]$logPobs))</span></span>
+<span id="cb22-182"><a href="#cb22-182" aria-hidden="true" tabindex="-1"></a><span class="in">NAB = unlist(purrr::map(1:length(datastruct_noprior_ma),\(i) datastruct_noprior_ma[[i]]$N1A2B3))</span></span>
 <span id="cb22-183"><a href="#cb22-183" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-184"><a href="#cb22-184" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_noprior_ma[[i]]=datastruct_prior_ma[[i]];</span></span>
-<span id="cb22-185"><a href="#cb22-185" aria-hidden="true" tabindex="-1"></a><span class="in">datastruct_noprior_ma[[i]]$include_prior = 0.01;</span></span>
-<span id="cb22-186"><a href="#cb22-186" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-187"><a href="#cb22-187" aria-hidden="true" tabindex="-1"></a><span class="in">inits[[i]]=param</span></span>
-<span id="cb22-188"><a href="#cb22-188" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-189"><a href="#cb22-189" aria-hidden="true" tabindex="-1"></a><span class="in">cseed = cseed+1</span></span>
-<span id="cb22-190"><a href="#cb22-190" aria-hidden="true" tabindex="-1"></a><span class="in">}</span></span>
+<span id="cb22-184"><a href="#cb22-184" aria-hidden="true" tabindex="-1"></a><span class="in">#--------------------------------------------------------------------------------------------------</span></span>
+<span id="cb22-185"><a href="#cb22-185" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_prior = c(65,66,209,210) # ref</span></span>
+<span id="cb22-186"><a href="#cb22-186" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_noprior= c(65,66,209,210) # ref</span></span>
+<span id="cb22-187"><a href="#cb22-187" aria-hidden="true" tabindex="-1"></a><span class="in">maxt_prior_ref = sum(data_ma$tg[chosen_indices_prior])</span></span>
+<span id="cb22-188"><a href="#cb22-188" aria-hidden="true" tabindex="-1"></a><span class="in">maxt_noprior_ref = sum(data_ma$tg[chosen_indices_noprior])</span></span>
+<span id="cb22-189"><a href="#cb22-189" aria-hidden="true" tabindex="-1"></a><span class="in">prior_ma_ref = fun_predict_stan_results(mod_analytes_sim, datastruct_prior_ma, inits, chosen_indices_prior, 10) </span></span>
+<span id="cb22-190"><a href="#cb22-190" aria-hidden="true" tabindex="-1"></a><span class="in">noprior_ma_ref = fun_predict_stan_results(mod_analytes_sim, datastruct_noprior_ma, inits, chosen_indices_noprior, 10) </span></span>
 <span id="cb22-191"><a href="#cb22-191" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-192"><a href="#cb22-192" aria-hidden="true" tabindex="-1"></a><span class="in">logP = unlist(purrr::map(1:length(datastruct_noprior_ma),\(i) datastruct_noprior_ma[[i]]$logPobs))</span></span>
-<span id="cb22-193"><a href="#cb22-193" aria-hidden="true" tabindex="-1"></a><span class="in">NAB = unlist(purrr::map(1:length(datastruct_noprior_ma),\(i) datastruct_noprior_ma[[i]]$N1A2B3))</span></span>
-<span id="cb22-194"><a href="#cb22-194" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-195"><a href="#cb22-195" aria-hidden="true" tabindex="-1"></a><span class="in">#--------------------------------------------------------------------------------------------------</span></span>
-<span id="cb22-196"><a href="#cb22-196" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_prior = c(65,66,209,210) # ref</span></span>
-<span id="cb22-197"><a href="#cb22-197" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_noprior= c(65,66,209,210) # ref</span></span>
-<span id="cb22-198"><a href="#cb22-198" aria-hidden="true" tabindex="-1"></a><span class="in">maxt_prior_ref = sum(data_ma$tg[chosen_indices_prior])</span></span>
-<span id="cb22-199"><a href="#cb22-199" aria-hidden="true" tabindex="-1"></a><span class="in">maxt_noprior_ref = sum(data_ma$tg[chosen_indices_noprior])</span></span>
-<span id="cb22-200"><a href="#cb22-200" aria-hidden="true" tabindex="-1"></a><span class="in">prior_ma_ref = fun_predict_stan_results(mod_analytes_sim, datastruct_prior_ma, inits, chosen_indices_prior, 10) </span></span>
-<span id="cb22-201"><a href="#cb22-201" aria-hidden="true" tabindex="-1"></a><span class="in">noprior_ma_ref = fun_predict_stan_results(mod_analytes_sim, datastruct_noprior_ma, inits, chosen_indices_noprior, 10) </span></span>
+<span id="cb22-192"><a href="#cb22-192" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_prior   = c(209,212) # p=2</span></span>
+<span id="cb22-193"><a href="#cb22-193" aria-hidden="true" tabindex="-1"></a><span class="in">maxt_prior_2 = sum(data_ma$tg[chosen_indices_prior])</span></span>
+<span id="cb22-194"><a href="#cb22-194" aria-hidden="true" tabindex="-1"></a><span class="in">prior_ma_2 = fun_predict_stan_results(mod_analytes_sim, datastruct_prior_ma, inits, chosen_indices_prior, 10) </span></span>
+<span id="cb22-195"><a href="#cb22-195" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-196"><a href="#cb22-196" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_prior   = c(210,209,79) # p=3</span></span>
+<span id="cb22-197"><a href="#cb22-197" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_noprior = c(210,209,79) # p=3</span></span>
+<span id="cb22-198"><a href="#cb22-198" aria-hidden="true" tabindex="-1"></a><span class="in">maxt_prior_3 = sum(data_ma$tg[chosen_indices_prior])</span></span>
+<span id="cb22-199"><a href="#cb22-199" aria-hidden="true" tabindex="-1"></a><span class="in">maxt_noprior_3 = sum(data_ma$tg[chosen_indices_noprior])</span></span>
+<span id="cb22-200"><a href="#cb22-200" aria-hidden="true" tabindex="-1"></a><span class="in">prior_ma_3 = fun_predict_stan_results(mod_analytes_sim, datastruct_prior_ma, inits, chosen_indices_prior, 10) </span></span>
+<span id="cb22-201"><a href="#cb22-201" aria-hidden="true" tabindex="-1"></a><span class="in">noprior_ma_3 = fun_predict_stan_results(mod_analytes_sim, datastruct_noprior_ma, inits, chosen_indices_noprior, 10) </span></span>
 <span id="cb22-202"><a href="#cb22-202" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-203"><a href="#cb22-203" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_prior   = c(209,212) # p=2</span></span>
-<span id="cb22-204"><a href="#cb22-204" aria-hidden="true" tabindex="-1"></a><span class="in">maxt_prior_2 = sum(data_ma$tg[chosen_indices_prior])</span></span>
-<span id="cb22-205"><a href="#cb22-205" aria-hidden="true" tabindex="-1"></a><span class="in">prior_ma_2 = fun_predict_stan_results(mod_analytes_sim, datastruct_prior_ma, inits, chosen_indices_prior, 10) </span></span>
-<span id="cb22-206"><a href="#cb22-206" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-207"><a href="#cb22-207" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_prior   = c(210,209,79) # p=3</span></span>
-<span id="cb22-208"><a href="#cb22-208" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_noprior = c(210,209,79) # p=3</span></span>
-<span id="cb22-209"><a href="#cb22-209" aria-hidden="true" tabindex="-1"></a><span class="in">maxt_prior_3 = sum(data_ma$tg[chosen_indices_prior])</span></span>
-<span id="cb22-210"><a href="#cb22-210" aria-hidden="true" tabindex="-1"></a><span class="in">maxt_noprior_3 = sum(data_ma$tg[chosen_indices_noprior])</span></span>
-<span id="cb22-211"><a href="#cb22-211" aria-hidden="true" tabindex="-1"></a><span class="in">prior_ma_3 = fun_predict_stan_results(mod_analytes_sim, datastruct_prior_ma, inits, chosen_indices_prior, 10) </span></span>
-<span id="cb22-212"><a href="#cb22-212" aria-hidden="true" tabindex="-1"></a><span class="in">noprior_ma_3 = fun_predict_stan_results(mod_analytes_sim, datastruct_noprior_ma, inits, chosen_indices_noprior, 10) </span></span>
-<span id="cb22-213"><a href="#cb22-213" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-214"><a href="#cb22-214" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_prior   = c(209,210,215,79) # p=4</span></span>
-<span id="cb22-215"><a href="#cb22-215" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_noprior = c(209,210,215,71) # p=4</span></span>
-<span id="cb22-216"><a href="#cb22-216" aria-hidden="true" tabindex="-1"></a><span class="in">maxt_prior_4 = sum(data_ma$tg[chosen_indices_prior])</span></span>
-<span id="cb22-217"><a href="#cb22-217" aria-hidden="true" tabindex="-1"></a><span class="in">maxt_noprior_4 = sum(data_ma$tg[chosen_indices_noprior])</span></span>
-<span id="cb22-218"><a href="#cb22-218" aria-hidden="true" tabindex="-1"></a><span class="in">prior_ma_4 = fun_predict_stan_results(mod_analytes_sim, datastruct_prior_ma, inits, chosen_indices_prior, 10) </span></span>
-<span id="cb22-219"><a href="#cb22-219" aria-hidden="true" tabindex="-1"></a><span class="in">noprior_ma_4 = fun_predict_stan_results(mod_analytes_sim, datastruct_noprior_ma, inits, chosen_indices_noprior, 10)</span></span>
-<span id="cb22-220"><a href="#cb22-220" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-221"><a href="#cb22-221" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_prior = c(210,209,212,215,79) # p=5</span></span>
-<span id="cb22-222"><a href="#cb22-222" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_noprior = c(210,209,212,215,71) # p=5</span></span>
-<span id="cb22-223"><a href="#cb22-223" aria-hidden="true" tabindex="-1"></a><span class="in">maxt_prior_5 = sum(data_ma$tg[chosen_indices_prior])</span></span>
-<span id="cb22-224"><a href="#cb22-224" aria-hidden="true" tabindex="-1"></a><span class="in">maxt_noprior_5 = sum(data_ma$tg[chosen_indices_noprior])</span></span>
-<span id="cb22-225"><a href="#cb22-225" aria-hidden="true" tabindex="-1"></a><span class="in">prior_ma_5 = fun_predict_stan_results(mod_analytes_sim, datastruct_prior_ma, inits, chosen_indices_prior, 10) </span></span>
-<span id="cb22-226"><a href="#cb22-226" aria-hidden="true" tabindex="-1"></a><span class="in">noprior_ma_5 = fun_predict_stan_results(mod_analytes_sim, datastruct_noprior_ma, inits, chosen_indices_noprior, 10) </span></span>
-<span id="cb22-227"><a href="#cb22-227" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-228"><a href="#cb22-228" aria-hidden="true" tabindex="-1"></a><span class="in">iresults = rbind(prior_ma_ref$iresults%&gt;%</span></span>
-<span id="cb22-229"><a href="#cb22-229" aria-hidden="true" tabindex="-1"></a><span class="in">                   mutate(method ="prior_ref", maxt = maxt_prior_ref),</span></span>
-<span id="cb22-230"><a href="#cb22-230" aria-hidden="true" tabindex="-1"></a><span class="in">                 noprior_ma_ref$iresults%&gt;%</span></span>
-<span id="cb22-231"><a href="#cb22-231" aria-hidden="true" tabindex="-1"></a><span class="in">                   mutate(method ="noprior_ref", maxt = maxt_noprior_ref),</span></span>
-<span id="cb22-232"><a href="#cb22-232" aria-hidden="true" tabindex="-1"></a><span class="in">                prior_ma_2$iresults%&gt;%</span></span>
-<span id="cb22-233"><a href="#cb22-233" aria-hidden="true" tabindex="-1"></a><span class="in">                   mutate(method ="prior_2", maxt = maxt_prior_2),</span></span>
-<span id="cb22-234"><a href="#cb22-234" aria-hidden="true" tabindex="-1"></a><span class="in">                 prior_ma_3$iresults%&gt;%</span></span>
-<span id="cb22-235"><a href="#cb22-235" aria-hidden="true" tabindex="-1"></a><span class="in">                   mutate(method ="prior_3", maxt = maxt_prior_3),</span></span>
-<span id="cb22-236"><a href="#cb22-236" aria-hidden="true" tabindex="-1"></a><span class="in">                 noprior_ma_3$iresults%&gt;%</span></span>
-<span id="cb22-237"><a href="#cb22-237" aria-hidden="true" tabindex="-1"></a><span class="in">                   mutate(method ="noprior_3", maxt = maxt_noprior_3),</span></span>
-<span id="cb22-238"><a href="#cb22-238" aria-hidden="true" tabindex="-1"></a><span class="in">                 prior_ma_4$iresults%&gt;%</span></span>
-<span id="cb22-239"><a href="#cb22-239" aria-hidden="true" tabindex="-1"></a><span class="in">                   mutate(method ="prior_4", maxt = maxt_prior_4),</span></span>
-<span id="cb22-240"><a href="#cb22-240" aria-hidden="true" tabindex="-1"></a><span class="in">                 noprior_ma_4$iresults%&gt;%</span></span>
-<span id="cb22-241"><a href="#cb22-241" aria-hidden="true" tabindex="-1"></a><span class="in">                   mutate(method ="noprior_4", maxt = maxt_noprior_4),</span></span>
-<span id="cb22-242"><a href="#cb22-242" aria-hidden="true" tabindex="-1"></a><span class="in">                 prior_ma_5$iresults%&gt;%</span></span>
-<span id="cb22-243"><a href="#cb22-243" aria-hidden="true" tabindex="-1"></a><span class="in">                   mutate(method ="prior_5", maxt = maxt_prior_5),</span></span>
-<span id="cb22-244"><a href="#cb22-244" aria-hidden="true" tabindex="-1"></a><span class="in">                 noprior_ma_5$iresults%&gt;%</span></span>
-<span id="cb22-245"><a href="#cb22-245" aria-hidden="true" tabindex="-1"></a><span class="in">                   mutate(method ="noprior_5", maxt = maxt_noprior_5))%&gt;%</span></span>
-<span id="cb22-246"><a href="#cb22-246" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(ivar = if_else(ivar&gt;1e6,1e6,ivar)) %&gt;%</span></span>
-<span id="cb22-247"><a href="#cb22-247" aria-hidden="true" tabindex="-1"></a><span class="in">  left_join(tibble(i=as.factor(seq(1,nAnalytes*n_rep,1)),logP=logP, Type=NAB))%&gt;%</span></span>
-<span id="cb22-248"><a href="#cb22-248" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(fr_tg=fr_tg)</span></span>
-<span id="cb22-249"><a href="#cb22-249" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-250"><a href="#cb22-250" aria-hidden="true" tabindex="-1"></a><span class="in">return(iresults)</span></span>
-<span id="cb22-251"><a href="#cb22-251" aria-hidden="true" tabindex="-1"></a><span class="in">}</span></span>
+<span id="cb22-203"><a href="#cb22-203" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_prior   = c(209,210,215,79) # p=4</span></span>
+<span id="cb22-204"><a href="#cb22-204" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_noprior = c(209,210,215,71) # p=4</span></span>
+<span id="cb22-205"><a href="#cb22-205" aria-hidden="true" tabindex="-1"></a><span class="in">maxt_prior_4 = sum(data_ma$tg[chosen_indices_prior])</span></span>
+<span id="cb22-206"><a href="#cb22-206" aria-hidden="true" tabindex="-1"></a><span class="in">maxt_noprior_4 = sum(data_ma$tg[chosen_indices_noprior])</span></span>
+<span id="cb22-207"><a href="#cb22-207" aria-hidden="true" tabindex="-1"></a><span class="in">prior_ma_4 = fun_predict_stan_results(mod_analytes_sim, datastruct_prior_ma, inits, chosen_indices_prior, 10) </span></span>
+<span id="cb22-208"><a href="#cb22-208" aria-hidden="true" tabindex="-1"></a><span class="in">noprior_ma_4 = fun_predict_stan_results(mod_analytes_sim, datastruct_noprior_ma, inits, chosen_indices_noprior, 10)</span></span>
+<span id="cb22-209"><a href="#cb22-209" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-210"><a href="#cb22-210" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_prior = c(210,209,212,215,79) # p=5</span></span>
+<span id="cb22-211"><a href="#cb22-211" aria-hidden="true" tabindex="-1"></a><span class="in">chosen_indices_noprior = c(210,209,212,215,71) # p=5</span></span>
+<span id="cb22-212"><a href="#cb22-212" aria-hidden="true" tabindex="-1"></a><span class="in">maxt_prior_5 = sum(data_ma$tg[chosen_indices_prior])</span></span>
+<span id="cb22-213"><a href="#cb22-213" aria-hidden="true" tabindex="-1"></a><span class="in">maxt_noprior_5 = sum(data_ma$tg[chosen_indices_noprior])</span></span>
+<span id="cb22-214"><a href="#cb22-214" aria-hidden="true" tabindex="-1"></a><span class="in">prior_ma_5 = fun_predict_stan_results(mod_analytes_sim, datastruct_prior_ma, inits, chosen_indices_prior, 10) </span></span>
+<span id="cb22-215"><a href="#cb22-215" aria-hidden="true" tabindex="-1"></a><span class="in">noprior_ma_5 = fun_predict_stan_results(mod_analytes_sim, datastruct_noprior_ma, inits, chosen_indices_noprior, 10) </span></span>
+<span id="cb22-216"><a href="#cb22-216" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-217"><a href="#cb22-217" aria-hidden="true" tabindex="-1"></a><span class="in">iresults = rbind(prior_ma_ref$iresults%&gt;%</span></span>
+<span id="cb22-218"><a href="#cb22-218" aria-hidden="true" tabindex="-1"></a><span class="in">                   mutate(method ="prior_ref", maxt = maxt_prior_ref),</span></span>
+<span id="cb22-219"><a href="#cb22-219" aria-hidden="true" tabindex="-1"></a><span class="in">                 noprior_ma_ref$iresults%&gt;%</span></span>
+<span id="cb22-220"><a href="#cb22-220" aria-hidden="true" tabindex="-1"></a><span class="in">                   mutate(method ="noprior_ref", maxt = maxt_noprior_ref),</span></span>
+<span id="cb22-221"><a href="#cb22-221" aria-hidden="true" tabindex="-1"></a><span class="in">                prior_ma_2$iresults%&gt;%</span></span>
+<span id="cb22-222"><a href="#cb22-222" aria-hidden="true" tabindex="-1"></a><span class="in">                   mutate(method ="prior_2", maxt = maxt_prior_2),</span></span>
+<span id="cb22-223"><a href="#cb22-223" aria-hidden="true" tabindex="-1"></a><span class="in">                 prior_ma_3$iresults%&gt;%</span></span>
+<span id="cb22-224"><a href="#cb22-224" aria-hidden="true" tabindex="-1"></a><span class="in">                   mutate(method ="prior_3", maxt = maxt_prior_3),</span></span>
+<span id="cb22-225"><a href="#cb22-225" aria-hidden="true" tabindex="-1"></a><span class="in">                 noprior_ma_3$iresults%&gt;%</span></span>
+<span id="cb22-226"><a href="#cb22-226" aria-hidden="true" tabindex="-1"></a><span class="in">                   mutate(method ="noprior_3", maxt = maxt_noprior_3),</span></span>
+<span id="cb22-227"><a href="#cb22-227" aria-hidden="true" tabindex="-1"></a><span class="in">                 prior_ma_4$iresults%&gt;%</span></span>
+<span id="cb22-228"><a href="#cb22-228" aria-hidden="true" tabindex="-1"></a><span class="in">                   mutate(method ="prior_4", maxt = maxt_prior_4),</span></span>
+<span id="cb22-229"><a href="#cb22-229" aria-hidden="true" tabindex="-1"></a><span class="in">                 noprior_ma_4$iresults%&gt;%</span></span>
+<span id="cb22-230"><a href="#cb22-230" aria-hidden="true" tabindex="-1"></a><span class="in">                   mutate(method ="noprior_4", maxt = maxt_noprior_4),</span></span>
+<span id="cb22-231"><a href="#cb22-231" aria-hidden="true" tabindex="-1"></a><span class="in">                 prior_ma_5$iresults%&gt;%</span></span>
+<span id="cb22-232"><a href="#cb22-232" aria-hidden="true" tabindex="-1"></a><span class="in">                   mutate(method ="prior_5", maxt = maxt_prior_5),</span></span>
+<span id="cb22-233"><a href="#cb22-233" aria-hidden="true" tabindex="-1"></a><span class="in">                 noprior_ma_5$iresults%&gt;%</span></span>
+<span id="cb22-234"><a href="#cb22-234" aria-hidden="true" tabindex="-1"></a><span class="in">                   mutate(method ="noprior_5", maxt = maxt_noprior_5))%&gt;%</span></span>
+<span id="cb22-235"><a href="#cb22-235" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(ivar = if_else(ivar&gt;1e6,1e6,ivar)) %&gt;%</span></span>
+<span id="cb22-236"><a href="#cb22-236" aria-hidden="true" tabindex="-1"></a><span class="in">  left_join(tibble(i=as.factor(seq(1,nAnalytes*n_rep,1)),logP=logP, Type=NAB))%&gt;%</span></span>
+<span id="cb22-237"><a href="#cb22-237" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(fr_tg=fr_tg)</span></span>
+<span id="cb22-238"><a href="#cb22-238" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-239"><a href="#cb22-239" aria-hidden="true" tabindex="-1"></a><span class="in">return(iresults)</span></span>
+<span id="cb22-240"><a href="#cb22-240" aria-hidden="true" tabindex="-1"></a><span class="in">}</span></span>
+<span id="cb22-241"><a href="#cb22-241" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb22-242"><a href="#cb22-242" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-243"><a href="#cb22-243" aria-hidden="true" tabindex="-1"></a><span class="in">```{r single-form-analytes-gra-sim, eval=FALSE}</span></span>
+<span id="cb22-244"><a href="#cb22-244" aria-hidden="true" tabindex="-1"></a><span class="in">fr_tg=seq(0.1,2,by=0.05)</span></span>
+<span id="cb22-245"><a href="#cb22-245" aria-hidden="true" tabindex="-1"></a><span class="in">sim &lt;- purrr::map(fr_tg, \(x) max_var_gra_tg(x))</span></span>
+<span id="cb22-246"><a href="#cb22-246" aria-hidden="true" tabindex="-1"></a><span class="in">sim&lt;-list_rbind(sim)</span></span>
+<span id="cb22-247"><a href="#cb22-247" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb22-248"><a href="#cb22-248" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-249"><a href="#cb22-249" aria-hidden="true" tabindex="-1"></a><span class="in">```{r single-form-analytes-gra-sim-load}</span></span>
+<span id="cb22-250"><a href="#cb22-250" aria-hidden="true" tabindex="-1"></a><span class="in">#saveRDS(sim,file = "../data/results-sim.RData")</span></span>
+<span id="cb22-251"><a href="#cb22-251" aria-hidden="true" tabindex="-1"></a><span class="in">sim=readRDS(file = "../data/results-sim.RData")</span></span>
 <span id="cb22-252"><a href="#cb22-252" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb22-253"><a href="#cb22-253" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-254"><a href="#cb22-254" aria-hidden="true" tabindex="-1"></a><span class="in">```{r single-form-analytes-gra-sim, eval=FALSE}</span></span>
-<span id="cb22-255"><a href="#cb22-255" aria-hidden="true" tabindex="-1"></a><span class="in">fr_tg=seq(0.1,2,by=0.05)</span></span>
-<span id="cb22-256"><a href="#cb22-256" aria-hidden="true" tabindex="-1"></a><span class="in">sim &lt;- purrr::map(fr_tg, \(x) max_var_gra_tg(x))</span></span>
-<span id="cb22-257"><a href="#cb22-257" aria-hidden="true" tabindex="-1"></a><span class="in">sim&lt;-list_rbind(sim)</span></span>
-<span id="cb22-258"><a href="#cb22-258" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb22-259"><a href="#cb22-259" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-260"><a href="#cb22-260" aria-hidden="true" tabindex="-1"></a><span class="in">```{r single-form-analytes-gra-sim-load}</span></span>
-<span id="cb22-261"><a href="#cb22-261" aria-hidden="true" tabindex="-1"></a><span class="in">#saveRDS(sim,file = "../data/results-sim.RData")</span></span>
-<span id="cb22-262"><a href="#cb22-262" aria-hidden="true" tabindex="-1"></a><span class="in">sim=readRDS(file = "../data/results-sim.RData")</span></span>
-<span id="cb22-263"><a href="#cb22-263" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb22-264"><a href="#cb22-264" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-265"><a href="#cb22-265" aria-hidden="true" tabindex="-1"></a><span class="fu"># Max var</span></span>
-<span id="cb22-266"><a href="#cb22-266" aria-hidden="true" tabindex="-1"></a><span class="in">```{r plot-results-maxvar}</span></span>
-<span id="cb22-267"><a href="#cb22-267" aria-hidden="true" tabindex="-1"></a><span class="in">sim_summary &lt;- sim %&gt;%</span></span>
-<span id="cb22-268"><a href="#cb22-268" aria-hidden="true" tabindex="-1"></a><span class="in">  group_by(method,fr_tg, maxt)%&gt;%</span></span>
-<span id="cb22-269"><a href="#cb22-269" aria-hidden="true" tabindex="-1"></a><span class="in">  summarise(mivar = median(ivar),</span></span>
-<span id="cb22-270"><a href="#cb22-270" aria-hidden="true" tabindex="-1"></a><span class="in">            livar = quantile(ivar,0.05),</span></span>
-<span id="cb22-271"><a href="#cb22-271" aria-hidden="true" tabindex="-1"></a><span class="in">            uivar = quantile(ivar,0.95)) %&gt;%</span></span>
-<span id="cb22-272"><a href="#cb22-272" aria-hidden="true" tabindex="-1"></a><span class="in">  ungroup %&gt;%</span></span>
-<span id="cb22-273"><a href="#cb22-273" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(maxtr = maxt*fr_tg)%&gt;%</span></span>
-<span id="cb22-274"><a href="#cb22-274" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(type = if_else(str_detect(method, 'noprior'), "No prior", "Prior"))%&gt;%</span></span>
-<span id="cb22-275"><a href="#cb22-275" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(ltype = if_else(str_detect(method, 'ref'), "reference", "optimized")) %&gt;%</span></span>
-<span id="cb22-276"><a href="#cb22-276" aria-hidden="true" tabindex="-1"></a><span class="in">   mutate(method = str_replace(method, 'noprior_|prior_', ''))</span></span>
-<span id="cb22-277"><a href="#cb22-277" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-278"><a href="#cb22-278" aria-hidden="true" tabindex="-1"></a><span class="in">p1=sim_summary %&gt;%</span></span>
-<span id="cb22-279"><a href="#cb22-279" aria-hidden="true" tabindex="-1"></a><span class="in">  ggplot(aes(x=maxtr/60,y=mivar, color=method, linetype = ltype))+</span></span>
-<span id="cb22-280"><a href="#cb22-280" aria-hidden="true" tabindex="-1"></a><span class="in">  #geom_ribbon(aes(ymin = livar, ymax = uivar, fill = method),  alpha=0.1, colour = NA) +</span></span>
-<span id="cb22-281"><a href="#cb22-281" aria-hidden="true" tabindex="-1"></a><span class="in">  geom_line()+  </span></span>
-<span id="cb22-282"><a href="#cb22-282" aria-hidden="true" tabindex="-1"></a><span class="in">  geom_point(data = sim_summary %&gt;% filter(fr_tg==1),aes(x=maxt/60,y=mivar, color=method))+  </span></span>
-<span id="cb22-283"><a href="#cb22-283" aria-hidden="true" tabindex="-1"></a><span class="in">  facet_wrap(.~type)+</span></span>
-<span id="cb22-284"><a href="#cb22-284" aria-hidden="true" tabindex="-1"></a><span class="in">  labs(x="Duration of experiments, h", y="Maximal standardized variance", linetype="design", color = "n")</span></span>
+<span id="cb22-254"><a href="#cb22-254" aria-hidden="true" tabindex="-1"></a><span class="fu"># Max var</span></span>
+<span id="cb22-255"><a href="#cb22-255" aria-hidden="true" tabindex="-1"></a><span class="in">```{r plot-results-maxvar}</span></span>
+<span id="cb22-256"><a href="#cb22-256" aria-hidden="true" tabindex="-1"></a><span class="in">sim_summary &lt;- sim %&gt;%</span></span>
+<span id="cb22-257"><a href="#cb22-257" aria-hidden="true" tabindex="-1"></a><span class="in">  group_by(method,fr_tg, maxt)%&gt;%</span></span>
+<span id="cb22-258"><a href="#cb22-258" aria-hidden="true" tabindex="-1"></a><span class="in">  summarise(mivar = median(ivar),</span></span>
+<span id="cb22-259"><a href="#cb22-259" aria-hidden="true" tabindex="-1"></a><span class="in">            livar = quantile(ivar,0.05),</span></span>
+<span id="cb22-260"><a href="#cb22-260" aria-hidden="true" tabindex="-1"></a><span class="in">            uivar = quantile(ivar,0.95)) %&gt;%</span></span>
+<span id="cb22-261"><a href="#cb22-261" aria-hidden="true" tabindex="-1"></a><span class="in">  ungroup %&gt;%</span></span>
+<span id="cb22-262"><a href="#cb22-262" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(maxtr = maxt*fr_tg)%&gt;%</span></span>
+<span id="cb22-263"><a href="#cb22-263" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(type = if_else(str_detect(method, 'noprior'), "No prior", "Prior"))%&gt;%</span></span>
+<span id="cb22-264"><a href="#cb22-264" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(ltype = if_else(str_detect(method, 'ref'), "reference", "optimized")) %&gt;%</span></span>
+<span id="cb22-265"><a href="#cb22-265" aria-hidden="true" tabindex="-1"></a><span class="in">   mutate(method = str_replace(method, 'noprior_|prior_', ''))</span></span>
+<span id="cb22-266"><a href="#cb22-266" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-267"><a href="#cb22-267" aria-hidden="true" tabindex="-1"></a><span class="in">p1=sim_summary %&gt;%</span></span>
+<span id="cb22-268"><a href="#cb22-268" aria-hidden="true" tabindex="-1"></a><span class="in">  ggplot(aes(x=maxtr/60,y=mivar, color=method, linetype = ltype))+</span></span>
+<span id="cb22-269"><a href="#cb22-269" aria-hidden="true" tabindex="-1"></a><span class="in">  #geom_ribbon(aes(ymin = livar, ymax = uivar, fill = method),  alpha=0.1, colour = NA) +</span></span>
+<span id="cb22-270"><a href="#cb22-270" aria-hidden="true" tabindex="-1"></a><span class="in">  geom_line()+  </span></span>
+<span id="cb22-271"><a href="#cb22-271" aria-hidden="true" tabindex="-1"></a><span class="in">  geom_point(data = sim_summary %&gt;% filter(fr_tg==1),aes(x=maxt/60,y=mivar, color=method))+  </span></span>
+<span id="cb22-272"><a href="#cb22-272" aria-hidden="true" tabindex="-1"></a><span class="in">  facet_wrap(.~type)+</span></span>
+<span id="cb22-273"><a href="#cb22-273" aria-hidden="true" tabindex="-1"></a><span class="in">  labs(x="Duration of experiments, h", y="Maximal standardized variance", linetype="design", color = "n")</span></span>
+<span id="cb22-274"><a href="#cb22-274" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-275"><a href="#cb22-275" aria-hidden="true" tabindex="-1"></a><span class="in">p11=p1+coord_cartesian(xlim=c(0,20),ylim=c(1,5))</span></span>
+<span id="cb22-276"><a href="#cb22-276" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-277"><a href="#cb22-277" aria-hidden="true" tabindex="-1"></a><span class="in">fig1 &lt;- (p1+coord_cartesian(xlim=c(0,20),ylim=c(1,100)))/(p11)+</span></span>
+<span id="cb22-278"><a href="#cb22-278" aria-hidden="true" tabindex="-1"></a><span class="in">  plot_layout(guides="collect", axis="collect")</span></span>
+<span id="cb22-279"><a href="#cb22-279" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-280"><a href="#cb22-280" aria-hidden="true" tabindex="-1"></a><span class="in">fig1</span></span>
+<span id="cb22-281"><a href="#cb22-281" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-282"><a href="#cb22-282" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave(.plot=fig1, .filename=paste("single-form-analytes-maxvar-comapretg.pdf"), .path = figures_dir1)</span></span>
+<span id="cb22-283"><a href="#cb22-283" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave.png(.plot=fig1, .filename=paste("single-form-analytes-maxvar-comapretg.png"), .path = figures_dir1)</span></span>
+<span id="cb22-284"><a href="#cb22-284" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb22-285"><a href="#cb22-285" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-286"><a href="#cb22-286" aria-hidden="true" tabindex="-1"></a><span class="in">p11=p1+coord_cartesian(xlim=c(0,20),ylim=c(1,5))</span></span>
-<span id="cb22-287"><a href="#cb22-287" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-288"><a href="#cb22-288" aria-hidden="true" tabindex="-1"></a><span class="in">fig1 &lt;- (p1+coord_cartesian(xlim=c(0,20),ylim=c(1,100)))/(p11)+</span></span>
-<span id="cb22-289"><a href="#cb22-289" aria-hidden="true" tabindex="-1"></a><span class="in">  plot_layout(guides="collect", axis="collect")</span></span>
-<span id="cb22-290"><a href="#cb22-290" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-291"><a href="#cb22-291" aria-hidden="true" tabindex="-1"></a><span class="in">fig1</span></span>
-<span id="cb22-292"><a href="#cb22-292" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-293"><a href="#cb22-293" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave(.plot=fig1, .filename=paste("single-form-analytes-maxvar-comapretg.pdf"), .path = figures_dir1)</span></span>
-<span id="cb22-294"><a href="#cb22-294" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave.png(.plot=fig1, .filename=paste("single-form-analytes-maxvar-comapretg.png"), .path = figures_dir1)</span></span>
-<span id="cb22-295"><a href="#cb22-295" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb22-296"><a href="#cb22-296" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-297"><a href="#cb22-297" aria-hidden="true" tabindex="-1"></a><span class="in">```{r plot-results-maxvar-v2}</span></span>
-<span id="cb22-298"><a href="#cb22-298" aria-hidden="true" tabindex="-1"></a><span class="in">sim_summary &lt;- sim %&gt;%</span></span>
-<span id="cb22-299"><a href="#cb22-299" aria-hidden="true" tabindex="-1"></a><span class="in">  group_by(method,fr_tg, maxt)%&gt;%</span></span>
-<span id="cb22-300"><a href="#cb22-300" aria-hidden="true" tabindex="-1"></a><span class="in">  summarise(mivar = median(ivar),</span></span>
-<span id="cb22-301"><a href="#cb22-301" aria-hidden="true" tabindex="-1"></a><span class="in">            livar = quantile(ivar,0.05),</span></span>
-<span id="cb22-302"><a href="#cb22-302" aria-hidden="true" tabindex="-1"></a><span class="in">            uivar = quantile(ivar,0.95)) %&gt;%</span></span>
-<span id="cb22-303"><a href="#cb22-303" aria-hidden="true" tabindex="-1"></a><span class="in">  ungroup %&gt;%</span></span>
-<span id="cb22-304"><a href="#cb22-304" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(maxtr = maxt*fr_tg)%&gt;%</span></span>
-<span id="cb22-305"><a href="#cb22-305" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(type = if_else(str_detect(method, 'noprior'), "No prior", "Prior"))%&gt;%</span></span>
-<span id="cb22-306"><a href="#cb22-306" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(ltype = if_else(str_detect(method, 'ref'), "reference", "optimized")) %&gt;%</span></span>
-<span id="cb22-307"><a href="#cb22-307" aria-hidden="true" tabindex="-1"></a><span class="in">   mutate(method = str_replace(method, 'noprior_|prior_', ''))</span></span>
-<span id="cb22-308"><a href="#cb22-308" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-309"><a href="#cb22-309" aria-hidden="true" tabindex="-1"></a><span class="in">p1=sim_summary %&gt;%</span></span>
-<span id="cb22-310"><a href="#cb22-310" aria-hidden="true" tabindex="-1"></a><span class="in">  ggplot(aes(x=maxtr/60,y=mivar, color=type, linetype = ltype))+</span></span>
-<span id="cb22-311"><a href="#cb22-311" aria-hidden="true" tabindex="-1"></a><span class="in">  #geom_ribbon(aes(ymin = livar, ymax = uivar, fill = method),  alpha=0.1, colour = NA) +</span></span>
-<span id="cb22-312"><a href="#cb22-312" aria-hidden="true" tabindex="-1"></a><span class="in">  geom_line()+  </span></span>
-<span id="cb22-313"><a href="#cb22-313" aria-hidden="true" tabindex="-1"></a><span class="in">  geom_point(data = sim_summary %&gt;% filter(fr_tg==1),aes(x=maxt/60,y=mivar, color=type))+  </span></span>
-<span id="cb22-314"><a href="#cb22-314" aria-hidden="true" tabindex="-1"></a><span class="in">  facet_wrap(.~method)+</span></span>
-<span id="cb22-315"><a href="#cb22-315" aria-hidden="true" tabindex="-1"></a><span class="in">  labs(x="Duration of experiments, h", y="Maximal standardized variance", linetype="design", color = "n")</span></span>
-<span id="cb22-316"><a href="#cb22-316" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-317"><a href="#cb22-317" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-318"><a href="#cb22-318" aria-hidden="true" tabindex="-1"></a><span class="in">fig2 &lt;- (p1+coord_cartesian(xlim=c(0,20),ylim=c(1,5)))+</span></span>
-<span id="cb22-319"><a href="#cb22-319" aria-hidden="true" tabindex="-1"></a><span class="in">  plot_layout(guides="collect", axis="collect")</span></span>
-<span id="cb22-320"><a href="#cb22-320" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-321"><a href="#cb22-321" aria-hidden="true" tabindex="-1"></a><span class="in">fig2</span></span>
-<span id="cb22-322"><a href="#cb22-322" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-323"><a href="#cb22-323" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave(.plot=fig2, .filename=paste("single-form-analytes-maxvar-comapretg-v2.pdf"), .path = figures_dir1)</span></span>
-<span id="cb22-324"><a href="#cb22-324" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave.png(.plot=fig2, .filename=paste("single-form-analytes-maxvar-comapretg-v2.png"), .path = figures_dir1)</span></span>
-<span id="cb22-325"><a href="#cb22-325" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb22-326"><a href="#cb22-326" aria-hidden="true" tabindex="-1"></a><span class="fu"># Mean var</span></span>
-<span id="cb22-327"><a href="#cb22-327" aria-hidden="true" tabindex="-1"></a><span class="in">```{r plot-results-mean}</span></span>
-<span id="cb22-328"><a href="#cb22-328" aria-hidden="true" tabindex="-1"></a><span class="in">sim_summary &lt;- sim %&gt;%</span></span>
-<span id="cb22-329"><a href="#cb22-329" aria-hidden="true" tabindex="-1"></a><span class="in">  group_by(method,fr_tg, maxt)%&gt;%</span></span>
-<span id="cb22-330"><a href="#cb22-330" aria-hidden="true" tabindex="-1"></a><span class="in">  summarise(mivar = median(imvar),</span></span>
-<span id="cb22-331"><a href="#cb22-331" aria-hidden="true" tabindex="-1"></a><span class="in">            livar = quantile(imvar,0.05),</span></span>
-<span id="cb22-332"><a href="#cb22-332" aria-hidden="true" tabindex="-1"></a><span class="in">            uivar = quantile(imvar,0.95)) %&gt;%</span></span>
-<span id="cb22-333"><a href="#cb22-333" aria-hidden="true" tabindex="-1"></a><span class="in">  ungroup %&gt;%</span></span>
-<span id="cb22-334"><a href="#cb22-334" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(maxtr = maxt*fr_tg)%&gt;%</span></span>
-<span id="cb22-335"><a href="#cb22-335" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(type = if_else(str_detect(method, 'noprior'), "No prior", "Prior"))%&gt;%</span></span>
-<span id="cb22-336"><a href="#cb22-336" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(ltype = if_else(str_detect(method, 'ref'), "reference", "optimized")) %&gt;%</span></span>
-<span id="cb22-337"><a href="#cb22-337" aria-hidden="true" tabindex="-1"></a><span class="in">   mutate(method = str_replace(method, 'noprior_|prior_', ''))</span></span>
-<span id="cb22-338"><a href="#cb22-338" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-339"><a href="#cb22-339" aria-hidden="true" tabindex="-1"></a><span class="in">p1=sim_summary %&gt;%</span></span>
-<span id="cb22-340"><a href="#cb22-340" aria-hidden="true" tabindex="-1"></a><span class="in">  ggplot(aes(x=maxtr/60,y=mivar, color=method, linetype = ltype))+</span></span>
-<span id="cb22-341"><a href="#cb22-341" aria-hidden="true" tabindex="-1"></a><span class="in">  #geom_ribbon(aes(ymin = livar, ymax = uivar, fill = method),  alpha=0.1, colour = NA) +</span></span>
-<span id="cb22-342"><a href="#cb22-342" aria-hidden="true" tabindex="-1"></a><span class="in">  geom_line()+  </span></span>
-<span id="cb22-343"><a href="#cb22-343" aria-hidden="true" tabindex="-1"></a><span class="in">  geom_point(data = sim_summary %&gt;% filter(fr_tg==1),aes(x=maxt/60,y=mivar, color=method))+  </span></span>
-<span id="cb22-344"><a href="#cb22-344" aria-hidden="true" tabindex="-1"></a><span class="in">  facet_wrap(.~type)+</span></span>
-<span id="cb22-345"><a href="#cb22-345" aria-hidden="true" tabindex="-1"></a><span class="in">  labs(x="Duration of experiments, h", y="Mean standardized variance", linetype="design", color = "n")</span></span>
+<span id="cb22-286"><a href="#cb22-286" aria-hidden="true" tabindex="-1"></a><span class="in">```{r plot-results-maxvar-v2}</span></span>
+<span id="cb22-287"><a href="#cb22-287" aria-hidden="true" tabindex="-1"></a><span class="in">sim_summary &lt;- sim %&gt;%</span></span>
+<span id="cb22-288"><a href="#cb22-288" aria-hidden="true" tabindex="-1"></a><span class="in">  group_by(method,fr_tg, maxt)%&gt;%</span></span>
+<span id="cb22-289"><a href="#cb22-289" aria-hidden="true" tabindex="-1"></a><span class="in">  summarise(mivar = median(ivar),</span></span>
+<span id="cb22-290"><a href="#cb22-290" aria-hidden="true" tabindex="-1"></a><span class="in">            livar = quantile(ivar,0.05),</span></span>
+<span id="cb22-291"><a href="#cb22-291" aria-hidden="true" tabindex="-1"></a><span class="in">            uivar = quantile(ivar,0.95)) %&gt;%</span></span>
+<span id="cb22-292"><a href="#cb22-292" aria-hidden="true" tabindex="-1"></a><span class="in">  ungroup %&gt;%</span></span>
+<span id="cb22-293"><a href="#cb22-293" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(maxtr = maxt*fr_tg)%&gt;%</span></span>
+<span id="cb22-294"><a href="#cb22-294" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(type = if_else(str_detect(method, 'noprior'), "No prior", "Prior"))%&gt;%</span></span>
+<span id="cb22-295"><a href="#cb22-295" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(ltype = if_else(str_detect(method, 'ref'), "reference", "optimized")) %&gt;%</span></span>
+<span id="cb22-296"><a href="#cb22-296" aria-hidden="true" tabindex="-1"></a><span class="in">   mutate(method = str_replace(method, 'noprior_|prior_', ''))</span></span>
+<span id="cb22-297"><a href="#cb22-297" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-298"><a href="#cb22-298" aria-hidden="true" tabindex="-1"></a><span class="in">p1=sim_summary %&gt;%</span></span>
+<span id="cb22-299"><a href="#cb22-299" aria-hidden="true" tabindex="-1"></a><span class="in">  ggplot(aes(x=maxtr/60,y=mivar, color=type, linetype = ltype))+</span></span>
+<span id="cb22-300"><a href="#cb22-300" aria-hidden="true" tabindex="-1"></a><span class="in">  #geom_ribbon(aes(ymin = livar, ymax = uivar, fill = method),  alpha=0.1, colour = NA) +</span></span>
+<span id="cb22-301"><a href="#cb22-301" aria-hidden="true" tabindex="-1"></a><span class="in">  geom_line()+  </span></span>
+<span id="cb22-302"><a href="#cb22-302" aria-hidden="true" tabindex="-1"></a><span class="in">  geom_point(data = sim_summary %&gt;% filter(fr_tg==1),aes(x=maxt/60,y=mivar, color=type))+  </span></span>
+<span id="cb22-303"><a href="#cb22-303" aria-hidden="true" tabindex="-1"></a><span class="in">  facet_wrap(.~method)+</span></span>
+<span id="cb22-304"><a href="#cb22-304" aria-hidden="true" tabindex="-1"></a><span class="in">  labs(x="Duration of experiments, h", y="Maximal standardized variance", linetype="design", color = "n")</span></span>
+<span id="cb22-305"><a href="#cb22-305" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-306"><a href="#cb22-306" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-307"><a href="#cb22-307" aria-hidden="true" tabindex="-1"></a><span class="in">fig2 &lt;- (p1+coord_cartesian(xlim=c(0,20),ylim=c(1,5)))+</span></span>
+<span id="cb22-308"><a href="#cb22-308" aria-hidden="true" tabindex="-1"></a><span class="in">  plot_layout(guides="collect", axis="collect")</span></span>
+<span id="cb22-309"><a href="#cb22-309" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-310"><a href="#cb22-310" aria-hidden="true" tabindex="-1"></a><span class="in">fig2</span></span>
+<span id="cb22-311"><a href="#cb22-311" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-312"><a href="#cb22-312" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave(.plot=fig2, .filename=paste("single-form-analytes-maxvar-comapretg-v2.pdf"), .path = figures_dir1)</span></span>
+<span id="cb22-313"><a href="#cb22-313" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave.png(.plot=fig2, .filename=paste("single-form-analytes-maxvar-comapretg-v2.png"), .path = figures_dir1)</span></span>
+<span id="cb22-314"><a href="#cb22-314" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb22-315"><a href="#cb22-315" aria-hidden="true" tabindex="-1"></a><span class="fu"># Mean var</span></span>
+<span id="cb22-316"><a href="#cb22-316" aria-hidden="true" tabindex="-1"></a><span class="in">```{r plot-results-mean}</span></span>
+<span id="cb22-317"><a href="#cb22-317" aria-hidden="true" tabindex="-1"></a><span class="in">sim_summary &lt;- sim %&gt;%</span></span>
+<span id="cb22-318"><a href="#cb22-318" aria-hidden="true" tabindex="-1"></a><span class="in">  group_by(method,fr_tg, maxt)%&gt;%</span></span>
+<span id="cb22-319"><a href="#cb22-319" aria-hidden="true" tabindex="-1"></a><span class="in">  summarise(mivar = median(imvar),</span></span>
+<span id="cb22-320"><a href="#cb22-320" aria-hidden="true" tabindex="-1"></a><span class="in">            livar = quantile(imvar,0.05),</span></span>
+<span id="cb22-321"><a href="#cb22-321" aria-hidden="true" tabindex="-1"></a><span class="in">            uivar = quantile(imvar,0.95)) %&gt;%</span></span>
+<span id="cb22-322"><a href="#cb22-322" aria-hidden="true" tabindex="-1"></a><span class="in">  ungroup %&gt;%</span></span>
+<span id="cb22-323"><a href="#cb22-323" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(maxtr = maxt*fr_tg)%&gt;%</span></span>
+<span id="cb22-324"><a href="#cb22-324" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(type = if_else(str_detect(method, 'noprior'), "No prior", "Prior"))%&gt;%</span></span>
+<span id="cb22-325"><a href="#cb22-325" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(ltype = if_else(str_detect(method, 'ref'), "reference", "optimized")) %&gt;%</span></span>
+<span id="cb22-326"><a href="#cb22-326" aria-hidden="true" tabindex="-1"></a><span class="in">   mutate(method = str_replace(method, 'noprior_|prior_', ''))</span></span>
+<span id="cb22-327"><a href="#cb22-327" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-328"><a href="#cb22-328" aria-hidden="true" tabindex="-1"></a><span class="in">p1=sim_summary %&gt;%</span></span>
+<span id="cb22-329"><a href="#cb22-329" aria-hidden="true" tabindex="-1"></a><span class="in">  ggplot(aes(x=maxtr/60,y=mivar, color=method, linetype = ltype))+</span></span>
+<span id="cb22-330"><a href="#cb22-330" aria-hidden="true" tabindex="-1"></a><span class="in">  #geom_ribbon(aes(ymin = livar, ymax = uivar, fill = method),  alpha=0.1, colour = NA) +</span></span>
+<span id="cb22-331"><a href="#cb22-331" aria-hidden="true" tabindex="-1"></a><span class="in">  geom_line()+  </span></span>
+<span id="cb22-332"><a href="#cb22-332" aria-hidden="true" tabindex="-1"></a><span class="in">  geom_point(data = sim_summary %&gt;% filter(fr_tg==1),aes(x=maxt/60,y=mivar, color=method))+  </span></span>
+<span id="cb22-333"><a href="#cb22-333" aria-hidden="true" tabindex="-1"></a><span class="in">  facet_wrap(.~type)+</span></span>
+<span id="cb22-334"><a href="#cb22-334" aria-hidden="true" tabindex="-1"></a><span class="in">  labs(x="Duration of experiments, h", y="Mean standardized variance", linetype="design", color = "n")</span></span>
+<span id="cb22-335"><a href="#cb22-335" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-336"><a href="#cb22-336" aria-hidden="true" tabindex="-1"></a><span class="in">p12 = p1+coord_cartesian(xlim=c(0,20),ylim=c(0,2))</span></span>
+<span id="cb22-337"><a href="#cb22-337" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-338"><a href="#cb22-338" aria-hidden="true" tabindex="-1"></a><span class="in">fig1 &lt;- (p1+coord_cartesian(xlim=c(0,20),ylim=c(0,25)))/(p12)+</span></span>
+<span id="cb22-339"><a href="#cb22-339" aria-hidden="true" tabindex="-1"></a><span class="in">  plot_layout(guides="collect", axis="collect")</span></span>
+<span id="cb22-340"><a href="#cb22-340" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-341"><a href="#cb22-341" aria-hidden="true" tabindex="-1"></a><span class="in">fig1</span></span>
+<span id="cb22-342"><a href="#cb22-342" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-343"><a href="#cb22-343" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave(.plot=fig1, .filename=paste("single-form-analytes-meanvar-comapretg.pdf"), .path = figures_dir1)</span></span>
+<span id="cb22-344"><a href="#cb22-344" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave.png(.plot=fig1, .filename=paste("single-form-analytes-meanvar-comapretg.png"), .path = figures_dir1)</span></span>
+<span id="cb22-345"><a href="#cb22-345" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb22-346"><a href="#cb22-346" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-347"><a href="#cb22-347" aria-hidden="true" tabindex="-1"></a><span class="in">p12 = p1+coord_cartesian(xlim=c(0,20),ylim=c(0,2))</span></span>
-<span id="cb22-348"><a href="#cb22-348" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-349"><a href="#cb22-349" aria-hidden="true" tabindex="-1"></a><span class="in">fig1 &lt;- (p1+coord_cartesian(xlim=c(0,20),ylim=c(0,25)))/(p12)+</span></span>
-<span id="cb22-350"><a href="#cb22-350" aria-hidden="true" tabindex="-1"></a><span class="in">  plot_layout(guides="collect", axis="collect")</span></span>
-<span id="cb22-351"><a href="#cb22-351" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-352"><a href="#cb22-352" aria-hidden="true" tabindex="-1"></a><span class="in">fig1</span></span>
-<span id="cb22-353"><a href="#cb22-353" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-354"><a href="#cb22-354" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave(.plot=fig1, .filename=paste("single-form-analytes-meanvar-comapretg.pdf"), .path = figures_dir1)</span></span>
-<span id="cb22-355"><a href="#cb22-355" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave.png(.plot=fig1, .filename=paste("single-form-analytes-meanvar-comapretg.png"), .path = figures_dir1)</span></span>
-<span id="cb22-356"><a href="#cb22-356" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb22-357"><a href="#cb22-357" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-358"><a href="#cb22-358" aria-hidden="true" tabindex="-1"></a><span class="in">```{r plot-results-mean-v2}</span></span>
-<span id="cb22-359"><a href="#cb22-359" aria-hidden="true" tabindex="-1"></a><span class="in">sim_summary &lt;- sim %&gt;%</span></span>
-<span id="cb22-360"><a href="#cb22-360" aria-hidden="true" tabindex="-1"></a><span class="in">  group_by(method,fr_tg, maxt)%&gt;%</span></span>
-<span id="cb22-361"><a href="#cb22-361" aria-hidden="true" tabindex="-1"></a><span class="in">  summarise(mivar = median(imvar),</span></span>
-<span id="cb22-362"><a href="#cb22-362" aria-hidden="true" tabindex="-1"></a><span class="in">            livar = quantile(imvar,0.05),</span></span>
-<span id="cb22-363"><a href="#cb22-363" aria-hidden="true" tabindex="-1"></a><span class="in">            uivar = quantile(imvar,0.95)) %&gt;%</span></span>
-<span id="cb22-364"><a href="#cb22-364" aria-hidden="true" tabindex="-1"></a><span class="in">  ungroup %&gt;%</span></span>
-<span id="cb22-365"><a href="#cb22-365" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(maxtr = maxt*fr_tg)%&gt;%</span></span>
-<span id="cb22-366"><a href="#cb22-366" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(type = if_else(str_detect(method, 'noprior'), "No prior", "Prior"))%&gt;%</span></span>
-<span id="cb22-367"><a href="#cb22-367" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(ltype = if_else(str_detect(method, 'ref'), "reference", "optimized")) %&gt;%</span></span>
-<span id="cb22-368"><a href="#cb22-368" aria-hidden="true" tabindex="-1"></a><span class="in">   mutate(method = str_replace(method, 'noprior_|prior_', ''))</span></span>
-<span id="cb22-369"><a href="#cb22-369" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-370"><a href="#cb22-370" aria-hidden="true" tabindex="-1"></a><span class="in">p1=sim_summary %&gt;%</span></span>
-<span id="cb22-371"><a href="#cb22-371" aria-hidden="true" tabindex="-1"></a><span class="in">  ggplot(aes(x=maxtr/60,y=mivar, color=type, linetype = ltype))+</span></span>
-<span id="cb22-372"><a href="#cb22-372" aria-hidden="true" tabindex="-1"></a><span class="in">  #geom_ribbon(aes(ymin = livar, ymax = uivar, fill = method),  alpha=0.1, colour = NA) +</span></span>
-<span id="cb22-373"><a href="#cb22-373" aria-hidden="true" tabindex="-1"></a><span class="in">  geom_line()+  </span></span>
-<span id="cb22-374"><a href="#cb22-374" aria-hidden="true" tabindex="-1"></a><span class="in">  geom_point(data = sim_summary %&gt;% filter(fr_tg==1),aes(x=maxt/60,y=mivar, color=type))+  </span></span>
-<span id="cb22-375"><a href="#cb22-375" aria-hidden="true" tabindex="-1"></a><span class="in">  facet_wrap(.~method)+</span></span>
-<span id="cb22-376"><a href="#cb22-376" aria-hidden="true" tabindex="-1"></a><span class="in">  labs(x="Duration of experiments, h", y="Mean standardized variance", linetype="design", color = "n")</span></span>
-<span id="cb22-377"><a href="#cb22-377" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-378"><a href="#cb22-378" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-379"><a href="#cb22-379" aria-hidden="true" tabindex="-1"></a><span class="in">fig2 &lt;- (p1+coord_cartesian(xlim=c(0,20),ylim=c(0,5)))+</span></span>
-<span id="cb22-380"><a href="#cb22-380" aria-hidden="true" tabindex="-1"></a><span class="in">  plot_layout(guides="collect", axis="collect")</span></span>
+<span id="cb22-347"><a href="#cb22-347" aria-hidden="true" tabindex="-1"></a><span class="in">```{r plot-results-mean-v2}</span></span>
+<span id="cb22-348"><a href="#cb22-348" aria-hidden="true" tabindex="-1"></a><span class="in">sim_summary &lt;- sim %&gt;%</span></span>
+<span id="cb22-349"><a href="#cb22-349" aria-hidden="true" tabindex="-1"></a><span class="in">  group_by(method,fr_tg, maxt)%&gt;%</span></span>
+<span id="cb22-350"><a href="#cb22-350" aria-hidden="true" tabindex="-1"></a><span class="in">  summarise(mivar = median(imvar),</span></span>
+<span id="cb22-351"><a href="#cb22-351" aria-hidden="true" tabindex="-1"></a><span class="in">            livar = quantile(imvar,0.05),</span></span>
+<span id="cb22-352"><a href="#cb22-352" aria-hidden="true" tabindex="-1"></a><span class="in">            uivar = quantile(imvar,0.95)) %&gt;%</span></span>
+<span id="cb22-353"><a href="#cb22-353" aria-hidden="true" tabindex="-1"></a><span class="in">  ungroup %&gt;%</span></span>
+<span id="cb22-354"><a href="#cb22-354" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(maxtr = maxt*fr_tg)%&gt;%</span></span>
+<span id="cb22-355"><a href="#cb22-355" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(type = if_else(str_detect(method, 'noprior'), "No prior", "Prior"))%&gt;%</span></span>
+<span id="cb22-356"><a href="#cb22-356" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(ltype = if_else(str_detect(method, 'ref'), "reference", "optimized")) %&gt;%</span></span>
+<span id="cb22-357"><a href="#cb22-357" aria-hidden="true" tabindex="-1"></a><span class="in">   mutate(method = str_replace(method, 'noprior_|prior_', ''))</span></span>
+<span id="cb22-358"><a href="#cb22-358" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-359"><a href="#cb22-359" aria-hidden="true" tabindex="-1"></a><span class="in">p1=sim_summary %&gt;%</span></span>
+<span id="cb22-360"><a href="#cb22-360" aria-hidden="true" tabindex="-1"></a><span class="in">  ggplot(aes(x=maxtr/60,y=mivar, color=type, linetype = ltype))+</span></span>
+<span id="cb22-361"><a href="#cb22-361" aria-hidden="true" tabindex="-1"></a><span class="in">  #geom_ribbon(aes(ymin = livar, ymax = uivar, fill = method),  alpha=0.1, colour = NA) +</span></span>
+<span id="cb22-362"><a href="#cb22-362" aria-hidden="true" tabindex="-1"></a><span class="in">  geom_line()+  </span></span>
+<span id="cb22-363"><a href="#cb22-363" aria-hidden="true" tabindex="-1"></a><span class="in">  geom_point(data = sim_summary %&gt;% filter(fr_tg==1),aes(x=maxt/60,y=mivar, color=type))+  </span></span>
+<span id="cb22-364"><a href="#cb22-364" aria-hidden="true" tabindex="-1"></a><span class="in">  facet_wrap(.~method)+</span></span>
+<span id="cb22-365"><a href="#cb22-365" aria-hidden="true" tabindex="-1"></a><span class="in">  labs(x="Duration of experiments, h", y="Mean standardized variance", linetype="design", color = "n")</span></span>
+<span id="cb22-366"><a href="#cb22-366" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-367"><a href="#cb22-367" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-368"><a href="#cb22-368" aria-hidden="true" tabindex="-1"></a><span class="in">fig2 &lt;- (p1+coord_cartesian(xlim=c(0,20),ylim=c(0,5)))+</span></span>
+<span id="cb22-369"><a href="#cb22-369" aria-hidden="true" tabindex="-1"></a><span class="in">  plot_layout(guides="collect", axis="collect")</span></span>
+<span id="cb22-370"><a href="#cb22-370" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-371"><a href="#cb22-371" aria-hidden="true" tabindex="-1"></a><span class="in">fig2</span></span>
+<span id="cb22-372"><a href="#cb22-372" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-373"><a href="#cb22-373" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave(.plot=fig2, .filename=paste("single-form-analytes-meanvar-comapretg-v2.pdf"), .path = figures_dir1)</span></span>
+<span id="cb22-374"><a href="#cb22-374" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave.png(.plot=fig2, .filename=paste("single-form-analytes-meanvar-comapretg-v2.png"), .path = figures_dir1)</span></span>
+<span id="cb22-375"><a href="#cb22-375" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb22-376"><a href="#cb22-376" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-377"><a href="#cb22-377" aria-hidden="true" tabindex="-1"></a><span class="fu"># Combined</span></span>
+<span id="cb22-378"><a href="#cb22-378" aria-hidden="true" tabindex="-1"></a><span class="in">```{r combined-plots}</span></span>
+<span id="cb22-379"><a href="#cb22-379" aria-hidden="true" tabindex="-1"></a><span class="in">fig3 &lt;- (p11)/(p12)+ plot_layout(guides="collect", axis="collect")</span></span>
+<span id="cb22-380"><a href="#cb22-380" aria-hidden="true" tabindex="-1"></a><span class="in">fig3</span></span>
 <span id="cb22-381"><a href="#cb22-381" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-382"><a href="#cb22-382" aria-hidden="true" tabindex="-1"></a><span class="in">fig2</span></span>
-<span id="cb22-383"><a href="#cb22-383" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-384"><a href="#cb22-384" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave(.plot=fig2, .filename=paste("single-form-analytes-meanvar-comapretg-v2.pdf"), .path = figures_dir1)</span></span>
-<span id="cb22-385"><a href="#cb22-385" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave.png(.plot=fig2, .filename=paste("single-form-analytes-meanvar-comapretg-v2.png"), .path = figures_dir1)</span></span>
-<span id="cb22-386"><a href="#cb22-386" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb22-382"><a href="#cb22-382" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave(.plot=fig3, .filename=paste("single-form-analytes-maxmeanvar-comapretg.pdf"), .path = figures_dir1)</span></span>
+<span id="cb22-383"><a href="#cb22-383" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave.png(.plot=fig3, .filename=paste("single-form-analytes-maxmeanvar-comapretg.png"), .path = figures_dir1)</span></span>
+<span id="cb22-384"><a href="#cb22-384" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb22-385"><a href="#cb22-385" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-386"><a href="#cb22-386" aria-hidden="true" tabindex="-1"></a><span class="fu"># References {.unnumbered}</span></span>
 <span id="cb22-387"><a href="#cb22-387" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-388"><a href="#cb22-388" aria-hidden="true" tabindex="-1"></a><span class="fu"># Combined</span></span>
-<span id="cb22-389"><a href="#cb22-389" aria-hidden="true" tabindex="-1"></a><span class="in">```{r combined-plots}</span></span>
-<span id="cb22-390"><a href="#cb22-390" aria-hidden="true" tabindex="-1"></a><span class="in">fig3 &lt;- (p11)/(p12)+ plot_layout(guides="collect", axis="collect")</span></span>
-<span id="cb22-391"><a href="#cb22-391" aria-hidden="true" tabindex="-1"></a><span class="in">fig3</span></span>
+<span id="cb22-388"><a href="#cb22-388" aria-hidden="true" tabindex="-1"></a>::: {#refs}</span>
+<span id="cb22-389"><a href="#cb22-389" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb22-390"><a href="#cb22-390" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-391"><a href="#cb22-391" aria-hidden="true" tabindex="-1"></a><span class="fu"># Licenses {.unnumbered}</span></span>
 <span id="cb22-392"><a href="#cb22-392" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-393"><a href="#cb22-393" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave(.plot=fig3, .filename=paste("single-form-analytes-maxmeanvar-comapretg.pdf"), .path = figures_dir1)</span></span>
-<span id="cb22-394"><a href="#cb22-394" aria-hidden="true" tabindex="-1"></a><span class="in">my.ggsave.png(.plot=fig3, .filename=paste("single-form-analytes-maxmeanvar-comapretg.png"), .path = figures_dir1)</span></span>
-<span id="cb22-395"><a href="#cb22-395" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb22-396"><a href="#cb22-396" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-397"><a href="#cb22-397" aria-hidden="true" tabindex="-1"></a><span class="fu"># References {.unnumbered}</span></span>
-<span id="cb22-398"><a href="#cb22-398" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-399"><a href="#cb22-399" aria-hidden="true" tabindex="-1"></a>::: {#refs}</span>
-<span id="cb22-400"><a href="#cb22-400" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb22-401"><a href="#cb22-401" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-402"><a href="#cb22-402" aria-hidden="true" tabindex="-1"></a><span class="fu"># Licenses {.unnumbered}</span></span>
-<span id="cb22-403"><a href="#cb22-403" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-404"><a href="#cb22-404" aria-hidden="true" tabindex="-1"></a><span class="ss">-   </span>Code &amp; copy; 2024, Paweł Wiczling, licensed under BSD-3.</span>
-<span id="cb22-405"><a href="#cb22-405" aria-hidden="true" tabindex="-1"></a><span class="ss">-   </span>Text &amp; copy; 2024, Paweł Wiczling, licensed under CC-BY-NC 4.0.</span>
-<span id="cb22-406"><a href="#cb22-406" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-407"><a href="#cb22-407" aria-hidden="true" tabindex="-1"></a><span class="fu"># Original Computing Environment {.unnumbered}</span></span>
-<span id="cb22-408"><a href="#cb22-408" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-409"><a href="#cb22-409" aria-hidden="true" tabindex="-1"></a><span class="in">```{r sessionInfo}</span></span>
-<span id="cb22-410"><a href="#cb22-410" aria-hidden="true" tabindex="-1"></a><span class="in">sessionInfo()</span></span>
-<span id="cb22-411"><a href="#cb22-411" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></pre></div>
+<span id="cb22-393"><a href="#cb22-393" aria-hidden="true" tabindex="-1"></a><span class="ss">-   </span>Code &amp; copy; 2024, Paweł Wiczling, licensed under BSD-3.</span>
+<span id="cb22-394"><a href="#cb22-394" aria-hidden="true" tabindex="-1"></a><span class="ss">-   </span>Text &amp; copy; 2024, Paweł Wiczling, licensed under CC-BY-NC 4.0.</span>
+<span id="cb22-395"><a href="#cb22-395" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-396"><a href="#cb22-396" aria-hidden="true" tabindex="-1"></a><span class="fu"># Original Computing Environment {.unnumbered}</span></span>
+<span id="cb22-397"><a href="#cb22-397" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-398"><a href="#cb22-398" aria-hidden="true" tabindex="-1"></a><span class="in">```{r sessionInfo}</span></span>
+<span id="cb22-399"><a href="#cb22-399" aria-hidden="true" tabindex="-1"></a><span class="in">sessionInfo()</span></span>
+<span id="cb22-400"><a href="#cb22-400" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></pre></div>
 </div></div></div></div></div>
 </div> <!-- /content -->
 
