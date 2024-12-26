@@ -1,0 +1,24 @@
+---
+title: "Leveraging Prior Knowledge for Improved Retention Prediction in Reversed-Phase HPLC"
+author:
+  - name: "Paweł Wiczling*"
+    affiliations:
+      - name: "Department of Biopharmaceutics and Pharmacodynamics, Medical University of Gdańsk, Gen. J. Hallera 107, 80-416 Gdańsk, Poland"
+date: "`r format(Sys.Date())`"
+format:
+  html:
+    theme: cosmo
+    toc: true
+    code-fold: true  
+    code-tools: true
+    fig-width: 7
+    fig-height: 7
+---
+
+* [Optimization, Scenario A-D, maxtg = 270](optimal-design-for-mixtures-design1.html)     
+* [Optimization, Scenario C, maxtg = 90](optimal-design-for-mixtures-design2.html)
+* [Optimization, Scenario C, maxtg = 30](optimal-design-for-mixtures-design3.html)      
+* [Simulations: Compare optimal with tg-scaled designs](optimal-design-for-mixtures-test.html)
+* [Simulations 1](optimal-design-for-mixtures-compare-tg.html)
+* [Simulations 2](optimal-design-for-mixtures-compare-tg-v2.html)
+* [Symbolic calculations](symbolic-calculations.html)

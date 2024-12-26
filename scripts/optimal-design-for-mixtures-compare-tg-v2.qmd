@@ -1,5 +1,5 @@
 ---
-title: "Design 1. Leveraging Prior Knowledge for Improved Retention Prediction in Reversed-Phase HPLC"
+title: "Simulations 2. Leveraging Prior Knowledge for Improved Retention Prediction in Reversed-Phase HPLC"
 author:
   - name: "Paweł Wiczling*"
     affiliations:
@@ -89,6 +89,8 @@ mod_analytes_sim = cmdstan_model("../stan/hplc-gra-single-form-analytes-sim-v2.s
 mod_analytes = cmdstan_model("../stan/hplc-gra-single-form-analytes.stan", stanc_options = list("O1"))
 mod_analytes$compile(compile_model_methods=TRUE,force_recompile=TRUE)
 ```
+
+
 ```{r fun-helpers}
 # to avoid recalculations
 mean_log_det_stan = function(data, init, chosen_indices, S){
